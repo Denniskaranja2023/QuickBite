@@ -1,4 +1,4 @@
-from Server.app import db, bcrypt
+from app import db, bcrypt
 from sqlalchemy_serializer import SerializerMixin
 from datetime import datetime, timezone
 import pytz
@@ -11,19 +11,44 @@ order_menuitem_association = db.Table('order_menuitem_association',
     db.Column('menu_item_id', db.Integer, db.ForeignKey('menu_items.id'), primary_key=True)
 )
 
+class Admin(db.Model, SerializerMixin):
+    __tablename__ = 'admins'
+    id= db.Column(db.Integer, primary_key=True)
+    name= db.Column(db.String, nullable=False)
+    email= db.Column(db.String, unique=True, nullable=False)
+    _password_hash= db.Column(db.String, nullable=False)
+    
+    restaurants = db.relationship('Restaurant', back_populates='admin')
+    
+    @hybrid_property
+    def password_hash(self):
+        return self._password_hash
+    @password_hash.setter
+    def password_hash(self, password):
+        password_hash= bcrypt.generate_password_hash(password.encode('utf-8'))
+        self._password_hash= password_hash.decode('utf-8')
+        
+    def authenticate(self, password):
+        return bcrypt.check_password_hash(self._password_hash, password.encode('utf-8'))
+    
+    def __repr__(self):
+        return f'<Admin {self.id} {self.name}>'
+
 class Restaurant(db.Model, SerializerMixin):
     __tablename__ = 'restaurants'
     id= db.Column(db.Integer, primary_key=True)
     address= db.Column(db.String, nullable=False)
-    contact= db.Column(db.String, nullabe=False)
+    contact= db.Column(db.String, nullable=False)
     name= db.Column(db.String, nullable=False)
-    logo= db.Column(db.String, nulable=True)
+    logo= db.Column(db.String, nullable=True)
     paybill_number= db.Column(db.Integer, nullable=True)
     email= db.Column(db.String, unique=True)
     bio= db.Column(db.String, nullable=True)
     _password_hash= db.Column(db.String, nullable=False)
     rating= db.Column(db.Float, default=3.0)
+    admin_id= db.Column(db.Integer, db.ForeignKey('admins.id'))
     
+    admin = db.relationship('Admin', back_populates='restaurants')
     orders = db.relationship('Order', back_populates='restaurant')
     payments = db.relationship('Payment', back_populates='restaurant')
     agents = db.relationship('DeliveryAgent', back_populates='restaurant')

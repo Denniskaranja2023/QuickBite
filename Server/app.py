@@ -30,7 +30,7 @@ api = Api(app)
 migrate = Migrate(app,db)
 #For the encryption of passwords
 bcrypt = Bcrypt(app)
-
+from models import Restaurant, DeliveryAgent, Customer, MenuItem, Order, Payment, RestaurantReview, DeliveryReview, Admin
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
