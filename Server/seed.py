@@ -11,6 +11,30 @@ def seed_data():
         db.drop_all()
         db.create_all()
         
+        # Kenyan addresses
+        kenyan_addresses = [
+            "Kimathi Street, Nairobi",
+            "Moi Avenue, Mombasa",
+            "Kenyatta Avenue, Nairobi",
+            "Uhuru Highway, Nairobi",
+            "Nyerere Road, Mombasa",
+            "Thika Road, Nairobi",
+            "Ngong Road, Nairobi",
+            "Digo Road, Mombasa",
+            "Garissa Road, Thika",
+            "Kenyatta Highway, Thika",
+            "Oginga Odinga Street, Kisumu",
+            "Jomo Kenyatta Highway, Kisumu",
+            "Waiyaki Way, Nairobi",
+            "Mombasa Road, Nairobi",
+            "Langata Road, Nairobi",
+            "Makupa Causeway, Mombasa",
+            "Nkrumah Road, Kisumu",
+            "Commercial Street, Thika",
+            "Haile Selassie Avenue, Nairobi",
+            "Mama Ngina Drive, Mombasa"
+        ]
+        
         # Restaurant logos
         logos = [
             "https://img.freepik.com/free-vector/bird-colorful-logo-gradient-vector_343694-1365.jpg?semt=ais_hybrid&w=740&q=80",
@@ -67,11 +91,12 @@ def seed_data():
         # Create 10 restaurants
         restaurants = []
         for i in range(10):
+            name = restaurant_names[i]
             restaurant = Restaurant(
-                name=restaurant_names[i],
-                address=fake.address(),
+                name=name,
+                address=random.choice(kenyan_addresses),
                 contact=fake.phone_number(),
-                email=fake.email(),
+                email=f"{name.lower().replace(' ', '').replace("'", '')}@restaurant.com",
                 bio=fake.text(max_nb_chars=200),
                 logo=random.choice(logos),
                 paybill_number=fake.random_int(min=100000, max=999999),
@@ -85,10 +110,12 @@ def seed_data():
         # Create 20 customers
         customers = []
         for _ in range(20):
+            name = fake.name()
             customer = Customer(
-                name=fake.name(),
+                name=name,
                 contact=fake.phone_number(),
-                image=random.choice(customer_images)
+                image=random.choice(customer_images),
+                email=f"{name.lower().replace(' ', '.')}@customer.com"
             )
             customer.password_hash = "customer"
             customers.append(customer)
@@ -97,12 +124,14 @@ def seed_data():
         # Create 15 delivery agents
         agents = []
         for _ in range(15):
+            name = fake.name()
             agent = DeliveryAgent(
-                name=fake.name(),
+                name=name,
                 contact=fake.phone_number(),
                 image=random.choice(agent_images),
                 rating=round(random.uniform(4.0, 5.0), 1),
-                restaurant=random.choice(restaurants)
+                restaurant=random.choice(restaurants),
+                email=f"{name.lower().replace(' ', '.')}@agent.com"
             )
             agent.password_hash = "agent"
             agents.append(agent)
@@ -159,7 +188,7 @@ def seed_data():
         for name, image in food_data:
             item = MenuItem(
                 name=name,
-                unit_price=round(random.uniform(5.0, 25.0), 2),
+                unit_price=round(random.uniform(300.0, 1500.0), 2),
                 image=image,
                 restaurant=random.choice(restaurants),
                 availability=random.choice([True, True, True, False])  # 75% available
@@ -173,8 +202,8 @@ def seed_data():
         orders = []
         for _ in range(30):
             order = Order(
-                delivery_address=fake.address(),
-                total_price=round(random.uniform(10.0, 100.0), 2),
+                delivery_address=random.choice(kenyan_addresses),
+                total_price=0,
                 payment_status=random.choice([True, False]),
                 customer=random.choice(customers),
                 restaurant=random.choice(restaurants),
@@ -186,15 +215,17 @@ def seed_data():
         
         db.session.commit()
         
-        # Add menu items to orders
+        # Add menu items to orders and calculate total price
         for order in orders:
             num_items = random.randint(1, 5)
             selected_items = random.sample(menu_items, num_items)
             order.menu_items.extend(selected_items)
+            order.total_price = round(sum(item.unit_price for item in selected_items), 2)
         
         # Create 15 payments for some orders
         paid_orders = random.sample(orders, 15)
         for order in paid_orders:
+            order.payment_status = True
             payment = Payment(
                 amount=order.total_price,
                 method=random.choice(["Credit Card", "Mobile Money", "Cash", "Bank Transfer"]),

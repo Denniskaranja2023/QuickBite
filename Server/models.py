@@ -79,6 +79,7 @@ class DeliveryAgent(db.Model, SerializerMixin):
     rating= db.Column(db.Float, default=5.0)
     _password_hash= db.Column(db.String, nullable=False)
     restaurant_id= db.Column(db.Integer, db.ForeignKey('restaurants.id'))
+    email= db.Column(db.String, unique=True, nullable=False)
     
     restaurant = db.relationship('Restaurant', back_populates='agents')
     delivery_reviews = db.relationship('DeliveryReview', back_populates='delivery_agent')
@@ -108,6 +109,7 @@ class DeliveryReview(db.Model, SerializerMixin):
     created_at= db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Nairobi')))
     delivery_agent_id= db.Column(db.Integer, db.ForeignKey('delivery_agents.id'))
     customer_id= db.Column(db.Integer, db.ForeignKey('customers.id'))
+    
     
     delivery_agent = db.relationship('DeliveryAgent', back_populates='delivery_reviews')
     customer = db.relationship('Customer', back_populates='delivery_reviews')
@@ -175,6 +177,7 @@ class Customer(db.Model, SerializerMixin):
     contact= db.Column(db.String, nullable=False)
     image= db.Column(db.String, nullable=True)
     _password_hash= db.Column(db.String, nullable=False)
+    email= db.Column(db.String, unique=True, nullable=False)
     
     delivery_reviews = db.relationship('DeliveryReview', back_populates='customer')
     restaurant_reviews = db.relationship('RestaurantReview', back_populates='customer')
