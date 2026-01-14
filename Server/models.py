@@ -1,4 +1,4 @@
-from app import db, bcrypt
+from extensions import db, bcrypt
 from sqlalchemy_serializer import SerializerMixin
 from datetime import datetime, timezone
 import pytz
