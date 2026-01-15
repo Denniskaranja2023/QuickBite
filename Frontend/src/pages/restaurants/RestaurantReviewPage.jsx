@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Star, MessageSquare, User } from 'lucide-react';
+import ImageWithFallback from '../../components/ImageWithFallback';
 
 function RestaurantReviewPage() {
   const [reviews, setReviews] = useState([]);
@@ -11,7 +12,6 @@ function RestaurantReviewPage() {
 
   const fetchReviews = async () => {
     try {
-      // Note: You'll need to create this endpoint
       const response = await fetch('/api/restaurant/reviews', {
         credentials: 'include',
       });
@@ -53,7 +53,7 @@ function RestaurantReviewPage() {
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Reviews</h1>
-        <p className="text-gray-600">See what customers are saying</p>
+        <p className="text-gray-600">See what customers are saying about your restaurant</p>
       </div>
 
       {/* Average Rating Card */}
@@ -78,16 +78,25 @@ function RestaurantReviewPage() {
         <div className="card text-center py-12">
           <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 text-lg">No reviews yet</p>
+          <p className="text-gray-400 text-sm mt-2">Customer reviews will appear here once they start reviewing your restaurant</p>
         </div>
       ) : (
         <div className="space-y-6">
           {reviews.map((review) => (
-            <div key={review.id} className="card">
+            <div key={review.id} className="card hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary-200 to-accent-200 rounded-full flex items-center justify-center">
-                    <User className="h-6 w-6 text-primary-600" />
-                  </div>
+                  {review.customer_image ? (
+                    <img
+                      src={review.customer_image}
+                      alt={review.customer_name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary-200 to-accent-200 rounded-full flex items-center justify-center">
+                      <User className="h-6 w-6 text-primary-600" />
+                    </div>
+                  )}
                   <div>
                     <h3 className="font-semibold text-gray-900">
                       {review.customer_name || 'Anonymous'}
@@ -102,7 +111,9 @@ function RestaurantReviewPage() {
                   {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
-              <p className="text-gray-700">{review.comment}</p>
+              <div className="pl-15">
+                <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{review.comment}</p>
+              </div>
             </div>
           ))}
         </div>

@@ -84,7 +84,7 @@ function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm mb-1">Total Revenue</p>
-              <p className="text-3xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
+              <p className="text-3xl font-bold">KSh {stats.totalRevenue.toFixed(2)}</p>
             </div>
             <DollarSign className="h-12 w-12 text-green-200" />
           </div>

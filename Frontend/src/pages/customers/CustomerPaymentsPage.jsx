@@ -58,7 +58,7 @@ function CustomerPaymentsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm mb-1">Total Spent</p>
-              <p className="text-3xl font-bold">${stats.total.toFixed(2)}</p>
+              <p className="text-3xl font-bold">KSh {stats.total.toFixed(2)}</p>
             </div>
             <DollarSign className="h-12 w-12 text-blue-200" />
           </div>

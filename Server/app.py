@@ -96,7 +96,71 @@ class Logout(Resource):
         session.pop('user_type', None)
         return make_response({'message': 'Logout successful'}, 200)
 
+class Signup(Resource):
+    def post(self):
+        data = request.get_json()
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
+        contact = data.get('contact')
+        address = data.get('address')
+        user_type = data.get('user_type')
+        
+        if not name or not email or not password or not contact or not address or not user_type:
+            return make_response({'error': 'All fields are required'}, 400)
+        
+        # Check if user already exists
+        existing_user = None
+        if user_type == 'restaurant':
+            existing_user = Restaurant.query.filter_by(email=email).first()
+        elif user_type == 'customer':
+            existing_user = Customer.query.filter_by(email=email).first()
+        
+        if existing_user:
+            return make_response({'error': 'User with this email already exists'}, 400)
+        
+        user = None
+        if user_type == 'customer':
+            user = Customer(
+                name=name,
+                email=email,
+                contact=contact,
+                address=address
+            )
+            user.password_hash = password
+            db.session.add(user)
+        elif user_type == 'restaurant':
+            user = Restaurant(
+                name=name,
+                email=email,
+                contact=contact,
+                address=address,
+                logo=data.get('logo'),
+                bio=data.get('bio'),
+                paybill_number=data.get('paybill_number')
+            )
+            user.password_hash = password
+            db.session.add(user)
+        else:
+            return make_response({'error': 'Invalid user_type. Only customer and restaurant signup are supported.'}, 400)
+        
+        db.session.commit()
+        
+        # Log the user in
+        session.clear()
+        session['user_id'] = user.id
+        session['user_type'] = user_type
+        
+        return make_response({
+            'message': 'Signup successful',
+            'user_type': user_type,
+            'user_id': user.id,
+            'name': user.name,
+            'email': user.email
+        }, 201)
+
 api.add_resource(Login, '/api/login')
+api.add_resource(Signup, '/api/signup')
 api.add_resource(CheckSession, '/api/check_session')
 api.add_resource(Logout, '/api/logout')
 
@@ -444,17 +508,59 @@ class RestaurantOrders(Resource):
         restaurant_id = session.get('user_id')
         orders = Order.query.filter_by(restaurant_id=restaurant_id).all()
         
-        return make_response([{
-            'id': o.id,
-            'created_at': o.created_at.isoformat() if o.created_at else None,
-            'delivery_time': o.delivery_time.isoformat() if o.delivery_time else None,
-            'delivery_address': o.delivery_address,
-            'payment_status': o.payment_status,
-            'total_price': o.total_price,
-            'restaurant_id': o.restaurant_id,
-            'delivery_agent_id': o.delivery_agent_id,
-            'customer_id': o.customer_id
-        } for o in orders], 200)
+        result = []
+        for o in orders:
+            # Build menu items list with quantities
+            # Since quantity is not stored in the association table, we'll track it
+            # For now, we'll just list the items (quantity defaults to 1)
+            menu_items = []
+            for item in o.menu_items:
+                menu_items.append({
+                    'id': item.id,
+                    'name': item.name,
+                    'unit_price': item.unit_price,
+                    'image': item.image,
+                    'quantity': 1  # Default to 1, can be enhanced with association table modification
+                })
+            
+            # Get customer details
+            customer = o.customer
+            customer_data = None
+            if customer:
+                customer_data = {
+                    'id': customer.id,
+                    'name': customer.name,
+                    'image': customer.image,
+                    'contact': customer.contact
+                }
+            
+            # Get delivery agent details
+            agent = o.delivery_agent
+            agent_data = None
+            if agent:
+                agent_data = {
+                    'id': agent.id,
+                    'name': agent.name,
+                    'image': agent.image,
+                    'contact': agent.contact
+                }
+            
+            result.append({
+                'id': o.id,
+                'created_at': o.created_at.isoformat() if o.created_at else None,
+                'delivery_time': o.delivery_time.isoformat() if o.delivery_time else None,
+                'delivery_address': o.delivery_address,
+                'payment_status': o.payment_status,
+                'total_price': o.total_price,
+                'restaurant_id': o.restaurant_id,
+                'delivery_agent_id': o.delivery_agent_id,
+                'customer_id': o.customer_id,
+                'customer': customer_data,
+                'delivery_agent': agent_data,
+                'menu_items': menu_items
+            })
+        
+        return make_response(result, 200)
 
 
 class RestaurantOrderById(Resource):
@@ -538,15 +644,22 @@ class RestaurantPayments(Resource):
         restaurant_id = session.get('user_id')
         payments = Payment.query.filter_by(restaurant_id=restaurant_id).all()
         
-        return make_response([{
-            'id': p.id,
-            'amount': p.amount,
-            'method': p.method,
-            'created_at': p.created_at.isoformat() if p.created_at else None,
-            'order_id': p.order_id,
-            'customer_id': p.customer_id,
-            'restaurant_id': p.restaurant_id
-        } for p in payments], 200)
+        result = []
+        for p in payments:
+            customer= Customer.query.filter_by(id=p.customer_id).first()
+            result.append({
+                'id': p.id,
+                'amount': p.amount,
+                'method': p.method,
+                'created_at': p.created_at.isoformat() if p.created_at else None,
+                'order_id': p.order_id,
+                'customer_id': p.customer_id,
+                'restaurant_id': p.restaurant_id,
+                'customer_name': customer.name if customer else 'Unknown',
+                'customer_image': customer.image if customer else None
+            })
+        
+        return make_response(result, 200)
 
 
 class RestaurantDeliveryAgents(Resource):
@@ -640,6 +753,31 @@ class RestaurantTopCustomers(Resource):
         } for customer, order_count in top_customers], 200)
 
 
+class RestaurantReviews(Resource):
+    def get(self):
+        if session.get('user_type') != 'restaurant':
+            return make_response({'error': 'Unauthorized'}, 403)
+        
+        restaurant_id = session.get('user_id')
+        reviews = RestaurantReview.query.filter_by(restaurant_id=restaurant_id).all()
+        
+        result = []
+        for r in reviews:
+            customer = r.customer
+            result.append({
+                'id': r.id,
+                'comment': r.comment,
+                'rating': r.rating,
+                'created_at': r.created_at.isoformat() if r.created_at else None,
+                'restaurant_id': r.restaurant_id,
+                'customer_id': r.customer_id,
+                'customer_name': customer.name if customer else 'Anonymous',
+                'customer_image': customer.image if customer else None
+            })
+        
+        return make_response(result, 200)
+
+
 api.add_resource(RestaurantAccount, '/api/restaurant/account')
 api.add_resource(RestaurantMenuItems, '/api/restaurant/menuitems')
 api.add_resource(RestaurantMenuItemById, '/api/restaurant/menuitems/<int:id>')
@@ -649,6 +787,7 @@ api.add_resource(RestaurantPayments, '/api/restaurant/payments')
 api.add_resource(RestaurantDeliveryAgents, '/api/restaurant/agents')
 api.add_resource(RestaurantDeliveryAgentById, '/api/restaurant/agents/<int:id>')
 api.add_resource(RestaurantTopCustomers, '/api/restaurant/top-customers')
+api.add_resource(RestaurantReviews, '/api/restaurant/reviews')
 
 #4. Customer routes
 class CustomerAccount(Resource):
@@ -1063,6 +1202,47 @@ class CustomerDeliveryReviewById(Resource):
         return make_response({'message': 'Review deleted'}, 200)  
     
     
+class CustomerAllReviews(Resource):
+    def get(self):
+        if session.get('user_type') != 'customer':
+            return make_response({'error': 'Unauthorized'}, 403)
+        
+        customer_id = session.get('user_id')
+        reviews = []
+        
+        # Get restaurant reviews
+        restaurant_reviews = RestaurantReview.query.filter_by(customer_id=customer_id).all()
+        for r in restaurant_reviews:
+            restaurant = Restaurant.query.get(r.restaurant_id)
+            reviews.append({
+                'id': r.id,
+                'type': 'restaurant',
+                'comment': r.comment,
+                'rating': r.rating,
+                'created_at': r.created_at.isoformat() if r.created_at else None,
+                'target_id': r.restaurant_id,
+                'target_name': restaurant.name if restaurant else 'Unknown Restaurant'
+            })
+        
+        # Get delivery agent reviews
+        delivery_reviews = DeliveryReview.query.filter_by(customer_id=customer_id).all()
+        for r in delivery_reviews:
+            agent = DeliveryAgent.query.get(r.delivery_agent_id)
+            reviews.append({
+                'id': r.id,
+                'type': 'agent',
+                'comment': r.comment,
+                'rating': r.rating,
+                'created_at': r.created_at.isoformat() if r.created_at else None,
+                'target_id': r.delivery_agent_id,
+                'target_name': agent.name if agent else 'Unknown Agent'
+            })
+        
+        # Sort by date, newest first
+        reviews.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        
+        return make_response(reviews, 200)
+
 api.add_resource(CustomerAccount, '/api/customer/account')
 api.add_resource(CustomerRestaurants, '/api/customer/restaurants')
 api.add_resource(CustomerRestaurantById, '/api/customer/restaurants/<int:id>')
@@ -1074,6 +1254,7 @@ api.add_resource(CustomerRestaurantReviews, '/api/customer/restaurant-reviews')
 api.add_resource(CustomerDeliveryReviews, '/api/customer/delivery-reviews')
 api.add_resource(CustomerRestaurantReviewById, '/api/customer/restaurant-reviews/<int:id>') 
 api.add_resource(CustomerDeliveryReviewById, '/api/customer/delivery-reviews/<int:id>')
+api.add_resource(CustomerAllReviews, '/api/customer/reviews')
 
 #5. Delivery Agent routes
 class DeliveryAgentAccount(Resource):
@@ -1217,11 +1398,28 @@ class DeliveryAgentOrderById(Resource):
         }, 200)
 
 
+class DeliveryAgentById(Resource):
+    def get(self, id):
+        agent = DeliveryAgent.query.get(id)
+        if not agent:
+            return make_response({'error': 'Delivery agent not found'}, 404)
+        
+        return make_response({
+            'id': agent.id,
+            'name': agent.name,
+            'email': agent.email,
+            'contact': agent.contact,
+            'image': agent.image,
+            'rating': agent.rating,
+            'restaurant_id': agent.restaurant_id
+        }, 200)
+
 api.add_resource(DeliveryAgentAccount, '/api/agent/account')
 api.add_resource(DeliveryAgentOrders, '/api/agent/orders')
 api.add_resource(DeliveryAgentDeliveredOrders, '/api/agent/delivered-orders')
 api.add_resource(DeliveryAgentReviews, '/api/agent/reviews')
 api.add_resource(DeliveryAgentOrderById, '/api/agent/orders/<int:id>')
+api.add_resource(DeliveryAgentById, '/api/agent/<int:id>')
 
 #6. File upload endpoint
 class UploadImage(Resource):

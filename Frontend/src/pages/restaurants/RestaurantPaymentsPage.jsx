@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, DollarSign, TrendingUp } from 'lucide-react';
+import { CreditCard, DollarSign, TrendingUp, User } from 'lucide-react';
+
+// Currency formatter for KSh
+const formatCurrency = (amount) => {
+  return `KSh ${Number(amount).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
 
 function RestaurantPaymentsPage() {
   const [payments, setPayments] = useState([]);
@@ -59,7 +64,7 @@ function RestaurantPaymentsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm mb-1">Total Revenue</p>
-              <p className="text-3xl font-bold">${stats.total.toFixed(2)}</p>
+              <p className="text-3xl font-bold">{formatCurrency(stats.total)}</p>
             </div>
             <DollarSign className="h-12 w-12 text-green-200" />
           </div>
@@ -68,7 +73,7 @@ function RestaurantPaymentsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm mb-1">This Month</p>
-              <p className="text-3xl font-bold">${stats.thisMonth.toFixed(2)}</p>
+              <p className="text-3xl font-bold">{formatCurrency(stats.thisMonth)}</p>
             </div>
             <TrendingUp className="h-12 w-12 text-blue-200" />
           </div>
@@ -87,7 +92,7 @@ function RestaurantPaymentsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">ID</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Payer</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Amount</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Method</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Order ID</th>
@@ -97,8 +102,25 @@ function RestaurantPaymentsPage() {
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.id} className="border-b hover:bg-gray-50">
-                    <td className="py-4 px-4">#{payment.id}</td>
-                    <td className="py-4 px-4 font-semibold">${payment.amount?.toFixed(2) || '0.00'}</td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center space-x-3">
+                        {payment.customer_image ? (
+                          <img
+                            src={payment.customer_image}
+                            alt={payment.customer_name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                            <User className="h-4 w-4 text-gray-500" />
+                          </div>
+                        )}
+                        <span className="font-medium text-gray-900">
+                          {payment.customer_name || 'Unknown'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 font-semibold">{formatCurrency(payment.amount)}</td>
                     <td className="py-4 px-4 capitalize">{payment.method || 'N/A'}</td>
                     <td className="py-4 px-4">#{payment.order_id || 'N/A'}</td>
                     <td className="py-4 px-4">

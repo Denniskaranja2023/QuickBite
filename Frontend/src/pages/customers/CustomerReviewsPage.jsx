@@ -11,7 +11,6 @@ function CustomerReviewsPage() {
 
   const fetchReviews = async () => {
     try {
-      // Note: You'll need to create this endpoint in your backend
       const response = await fetch('/api/customer/reviews', {
         credentials: 'include',
       });
@@ -60,13 +59,22 @@ function CustomerReviewsPage() {
       ) : (
         <div className="space-y-6">
           {reviews.map((review) => (
-            <div key={review.id} className="card">
+            <div key={`${review.type}-${review.id}`} className="card">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {review.restaurant_name || review.delivery_agent_name || 'Review'}
-                  </h3>
                   <div className="flex items-center space-x-2 mb-2">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      review.type === 'restaurant'
+                        ? 'bg-primary-100 text-primary-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {review.type === 'restaurant' ? '🍽️ Restaurant' : '🚗 Delivery Agent'}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {review.target_name}
+                  </h3>
+                  <div className="flex items-center space-x-2 mt-1">
                     {renderStars(review.rating)}
                     <span className="text-gray-600">({review.rating}/5)</span>
                   </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, MapPin, Phone, Save } from 'lucide-react';
+import { User, Mail, MapPin, Phone, Save, Upload, X } from 'lucide-react';
 
 function RestaurantProfilePage() {
   const [restaurant, setRestaurant] = useState(null);
@@ -13,6 +13,7 @@ function RestaurantProfilePage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -42,6 +43,56 @@ function RestaurantProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    setError('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setFormData({ ...formData, logo: data.url });
+        setSuccess('Logo uploaded successfully!');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.error || 'Failed to upload logo');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeLogo = () => {
+    setFormData({ ...formData, logo: '' });
   };
 
   const handleSubmit = async (e) => {
@@ -104,17 +155,45 @@ function RestaurantProfilePage() {
 
         {/* Logo */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
-          <input
-            type="url"
-            value={formData.logo}
-            onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-            className="input-field"
-            placeholder="https://example.com/logo.jpg"
-          />
-          {formData.logo && (
-            <div className="mt-2">
-              <img src={formData.logo} alt="Logo preview" className="w-24 h-24 object-cover rounded-lg" />
+          <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+          
+          {!formData.logo ? (
+            <div className="flex items-center justify-center w-full">
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  {uploading ? (
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-500">Click to upload logo</p>
+                      <p className="text-xs text-gray-400">JPEG, PNG, GIF or WebP (max 5MB)</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleLogoUpload}
+                  disabled={uploading}
+                />
+              </label>
+            </div>
+          ) : (
+            <div className="relative inline-block">
+              <img
+                src={formData.logo}
+                alt="Logo preview"
+                className="w-32 h-32 object-cover rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={removeLogo}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
         </div>

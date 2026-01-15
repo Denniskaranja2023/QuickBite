@@ -141,7 +141,7 @@ function RestaurantMenuPage() {
                 <div key={item.id} className="card flex items-center justify-between">
                   <div className="flex-1">
                     <h3 className="text-xl font-semibold text-gray-900 mb-1">{item.name}</h3>
-                    <p className="text-gray-600 mb-2">${item.unit_price?.toFixed(2) || '0.00'}</p>
+                    <p className="text-gray-600 mb-2">KSh {item.unit_price?.toFixed(2) || '0.00'}</p>
                     {!item.availability && (
                       <span className="inline-block px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
                         Unavailable
@@ -205,10 +205,10 @@ function RestaurantMenuPage() {
                     return (
                       <div key={itemId} className="flex items-center justify-between border-b pb-3">
                         <div>
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-sm text-gray-600">${item.unit_price?.toFixed(2)} x {quantity}</p>
-                        </div>
-                        <p className="font-semibold">${(item.unit_price * quantity).toFixed(2)}</p>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-gray-600">KSh {item.unit_price?.toFixed(2)} x {quantity}</p>
+                      </div>
+                      <p className="font-semibold">KSh {(item.unit_price * quantity).toFixed(2)}</p>
                       </div>
                     );
                   })}
@@ -216,7 +216,7 @@ function RestaurantMenuPage() {
                 <div className="border-t pt-4 mb-4">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-lg font-semibold">Total:</span>
-                    <span className="text-2xl font-bold text-primary-600">${getCartTotal().toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-primary-600">KSh {getCartTotal().toFixed(2)}</span>
                   </div>
                   <button onClick={proceedToCheckout} className="w-full btn-primary">
                     Proceed to Checkout

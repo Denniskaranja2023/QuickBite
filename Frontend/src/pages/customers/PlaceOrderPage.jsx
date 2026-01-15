@@ -86,7 +86,7 @@ function PlaceOrderPage() {
                     <p className="font-medium">{menuItem.name}</p>
                     <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                   </div>
-                  <p className="font-semibold">${(menuItem.unit_price * item.quantity).toFixed(2)}</p>
+                      <p className="font-semibold">KSh {(menuItem.unit_price * item.quantity).toFixed(2)}</p>
                 </div>
               );
             })}
@@ -94,7 +94,7 @@ function PlaceOrderPage() {
           <div className="border-t pt-4">
             <div className="flex items-center justify-between">
               <span className="text-xl font-semibold">Total:</span>
-              <span className="text-2xl font-bold text-primary-600">${calculateTotal().toFixed(2)}</span>
+              <span className="text-2xl font-bold text-primary-600">KSh {calculateTotal().toFixed(2)}</span>
             </div>
           </div>
         </div>

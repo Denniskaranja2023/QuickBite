@@ -16,13 +16,42 @@ function AgentDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Note: You'll need to create these endpoints
-      // const response = await fetch('/api/agent/orders', { credentials: 'include' });
-      // if (response.ok) {
-      //   const data = await response.json();
-      //   setRecentOrders(data.slice(0, 5));
-      //   setStats(prev => ({ ...prev, totalDeliveries: data.length }));
-      // }
+      const [ordersRes, reviewsRes] = await Promise.all([
+        fetch('/api/agent/orders', { credentials: 'include' }),
+        fetch('/api/agent/reviews', { credentials: 'include' }),
+      ]);
+
+      let recentOrders = [];
+      let totalDeliveries = 0;
+
+      if (ordersRes.ok) {
+        const orders = await ordersRes.json();
+        recentOrders = orders.slice(0, 5);
+        totalDeliveries = orders.length;
+        setRecentOrders(recentOrders);
+      }
+
+      let averageRating = 0;
+      if (reviewsRes.ok) {
+        const reviews = await reviewsRes.json();
+        if (reviews.length > 0) {
+          averageRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length;
+        }
+      }
+
+      // Calculate completed today
+      const today = new Date();
+      const completedToday = recentOrders.filter(order => {
+        if (!order.delivery_time) return false;
+        const orderDate = new Date(order.delivery_time);
+        return orderDate.toDateString() === today.toDateString();
+      }).length;
+
+      setStats({
+        totalDeliveries,
+        averageRating,
+        completedToday,
+      });
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {

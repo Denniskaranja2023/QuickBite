@@ -77,7 +77,7 @@ function OrderPaymentPage() {
         <div className="bg-gray-50 rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <span className="text-gray-600">Total Amount</span>
-            <span className="text-3xl font-bold text-primary-600">${order.total_price?.toFixed(2) || '0.00'}</span>
+            <span className="text-3xl font-bold text-primary-600">KSh {order.total_price?.toFixed(2) || '0.00'}</span>
           </div>
           <div className="text-sm text-gray-600">
             <p>Delivery Address: {order.delivery_address}</p>
@@ -150,7 +150,7 @@ function OrderPaymentPage() {
               ) : (
                 <>
                   <CheckCircle className="h-5 w-5" />
-                  <span>Pay ${order.total_price?.toFixed(2) || '0.00'}</span>
+                  <span>Pay KSh {order.total_price?.toFixed(2) || '0.00'}</span>
                 </>
               )}
             </button>

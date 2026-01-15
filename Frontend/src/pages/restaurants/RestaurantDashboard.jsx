@@ -192,7 +192,7 @@ function RestaurantDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div className="card bg-gradient-to-br from-primary-500 to-primary-600 text-white">
           <div className="flex items-center justify-between">
             <div>
@@ -218,15 +218,6 @@ function RestaurantDashboard() {
               <p className="text-3xl font-bold">{stats.totalAgents}</p>
             </div>
             <Users className="h-12 w-12 text-blue-200" />
-          </div>
-        </div>
-        <div className="card bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-yellow-100 text-sm mb-1">Rating</p>
-              <p className="text-3xl font-bold">{stats.averageRating.toFixed(1)}</p>
-            </div>
-            <Star className="h-12 w-12 text-yellow-200" />
           </div>
         </div>
       </div>

@@ -84,7 +84,7 @@ function CustomerOrdersPage() {
                     </div>
                     <div>
                       <p className="font-medium text-gray-700">Total</p>
-                      <p className="font-semibold text-gray-900">${order.total_price?.toFixed(2) || '0.00'}</p>
+                    <p className="font-semibold text-gray-900">KSh {order.total_price?.toFixed(2) || '0.00'}</p>
                     </div>
                     <div>
                       <p className="font-medium text-gray-700">Delivery Address</p>
