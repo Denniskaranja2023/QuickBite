@@ -1,233 +1,290 @@
-import { useState } from 'react';
-import {
-  Plus,
-  MapPin,
-  Phone,
-  Calendar,
-  Star,
-  ShoppingCart,
-  DollarSign,
-  Trash2,
-  ArrowLeft,
-  Upload,
-  Mail,
-  Lock,
-} from 'lucide-react';
-import { ImageWithFallback } from '../../components/ImageWithFallback';
+import { useState, useEffect } from 'react';
+import { UtensilsCrossed, Plus, Trash2, Star, MapPin, Mail, Phone } from 'lucide-react';
 
-export function AdminRestaurantsPage() {
-  const [showAddRestaurant, setShowAddRestaurant] = useState(false);
-  const [logoPreview, setLogoPreview] = useState(null);
-  const [newRestaurant, setNewRestaurant] = useState({
+function AdminRestaurants() {
+  const [restaurants, setRestaurants] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState({
     name: '',
+    email: '',
     address: '',
     contact: '',
-    email: '',
-    password: '',
+    bio: '',
     logo: '',
+    password: '',
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const [restaurants, setRestaurants] = useState([
-    {
-      id: 1,
-      name: 'Pizza Paradise',
-      logo: 'https://images.unsplash.com/photo-1563245738-9169ff58eccf',
-      orders: 1245,
-      revenue: 28450.75,
-      rating: 4.8,
-      location: 'Downtown',
-      phone: '+254 712 000 001',
-      email: 'info@pizzaparadise.com',
-      joined: 'Jan 2024',
-    },
-    {
-      id: 2,
-      name: 'Burger Hub',
-      logo: 'https://images.unsplash.com/photo-1644447381290-85358ae625cb',
-      orders: 1180,
-      revenue: 25680.25,
-      rating: 4.7,
-      location: 'Westlands',
-      phone: '+254 723 000 002',
-      email: 'contact@burgerhub.com',
-      joined: 'Feb 2024',
-    },
-  ]);
+  useEffect(() => {
+    fetchRestaurants();
+  }, []);
 
-  const handleDeleteRestaurant = (id, name) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      setRestaurants(restaurants.filter(r => r.id !== id));
+  const fetchRestaurants = async () => {
+    try {
+      const response = await fetch('/api/admin/restaurants', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRestaurants(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch restaurants:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogoChange = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setLogoPreview(reader.result);
-      setNewRestaurant({ ...newRestaurant, logo: reader.result });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleAddRestaurant = (e) => {
+  const handleAddRestaurant = async (e) => {
     e.preventDefault();
+    setError('');
 
-    const restaurant = {
-      id: restaurants.length + 1,
-      name: newRestaurant.name,
-      logo:
-        newRestaurant.logo ||
-        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0',
-      orders: 0,
-      revenue: 0,
-      rating: 4.0,
-      location: newRestaurant.address,
-      phone: newRestaurant.contact,
-      email: newRestaurant.email,
-      joined: 'Jan 2026',
-    };
+    try {
+      const response = await fetch('/api/admin/restaurants', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
 
-    setRestaurants([...restaurants, restaurant]);
-    setShowAddRestaurant(false);
-    setNewRestaurant({
-      name: '',
-      address: '',
-      contact: '',
-      email: '',
-      password: '',
-      logo: '',
-    });
-    setLogoPreview(null);
+      const data = await response.json();
+
+      if (response.ok) {
+        fetchRestaurants();
+        setShowAddModal(false);
+        setFormData({
+          name: '',
+          email: '',
+          address: '',
+          contact: '',
+          bio: '',
+          logo: '',
+          password: '',
+        });
+      } else {
+        setError(data.error || 'Failed to create restaurant');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    }
   };
+
+  const handleDeleteRestaurant = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this restaurant?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/restaurants/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        fetchRestaurants();
+      }
+    } catch (error) {
+      console.error('Failed to delete restaurant:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {!showAddRestaurant ? (
-        <>
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-[#A60311] mb-2">
-                Restaurants
-              </h2>
-              <p className="text-gray-600">
-                Manage all restaurants on the platform
-              </p>
-            </div>
-            <button
-              onClick={() => setShowAddRestaurant(true)}
-              className="bg-red-600 text-white px-6 py-3 rounded-xl flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Add Restaurant
-            </button>
-          </div>
+    <div className="max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Restaurants</h1>
+          <p className="text-gray-600">Manage all restaurants</p>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="btn-primary flex items-center space-x-2"
+        >
+          <Plus className="h-5 w-5" />
+          <span>Add Restaurant</span>
+        </button>
+      </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {restaurants.map(restaurant => (
-              <div
-                key={restaurant.id}
-                className="bg-white rounded-xl shadow-lg overflow-hidden"
-              >
-                <div className="h-48">
-                  <ImageWithFallback
-                    src={restaurant.logo}
-                    alt={restaurant.name}
-                    className="w-full h-full object-cover"
-                  />
+      {restaurants.length === 0 ? (
+        <div className="card text-center py-12">
+          <UtensilsCrossed className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg mb-4">No restaurants yet</p>
+          <button onClick={() => setShowAddModal(true)} className="btn-primary">
+            Add Your First Restaurant
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {restaurants.map((restaurant) => (
+            <div key={restaurant.id} className="card">
+              <div className="aspect-video bg-gradient-to-br from-primary-200 to-accent-200 rounded-lg mb-4 flex items-center justify-center">
+                {restaurant.logo ? (
+                  <img src={restaurant.logo} alt={restaurant.name} className="h-full w-full object-cover rounded-lg" />
+                ) : (
+                  <UtensilsCrossed className="h-16 w-16 text-primary-400" />
+                )}
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{restaurant.name}</h3>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <Mail className="h-4 w-4" />
+                  <span className="truncate">{restaurant.email}</span>
                 </div>
-
-                <div className="p-5">
-                  <h3 className="text-xl font-bold mb-3">
-                    {restaurant.name}
-                  </h3>
-
-                  <div className="text-sm text-gray-600 space-y-2 mb-4">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      {restaurant.location}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      {restaurant.phone}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Joined {restaurant.joined}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      handleDeleteRestaurant(
-                        restaurant.id,
-                        restaurant.name
-                      )
-                    }
-                    className="w-full bg-red-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <Phone className="h-4 w-4" />
+                  <span>{restaurant.contact}</span>
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <MapPin className="h-4 w-4" />
+                  <span className="truncate">{restaurant.address}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span className="text-sm text-gray-600">{restaurant.rating?.toFixed(1) || '4.5'}</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <>
-          <button
-            onClick={() => setShowAddRestaurant(false)}
-            className="flex items-center gap-2 mb-6 text-red-600"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back
-          </button>
-
-          <form
-            onSubmit={handleAddRestaurant}
-            className="bg-white p-8 rounded-xl max-w-xl space-y-6"
-          >
-            <input
-              type="text"
-              placeholder="Restaurant Name"
-              value={newRestaurant.name}
-              onChange={e =>
-                setNewRestaurant({ ...newRestaurant, name: e.target.value })
-              }
-              className="w-full border p-3 rounded"
-            />
-
-            <input
-              type="email"
-              placeholder="Email"
-              value={newRestaurant.email}
-              onChange={e =>
-                setNewRestaurant({ ...newRestaurant, email: e.target.value })
-              }
-              className="w-full border p-3 rounded"
-            />
-
-            <input
-              type="password"
-              placeholder="Password"
-              value={newRestaurant.password}
-              onChange={e =>
-                setNewRestaurant({ ...newRestaurant, password: e.target.value })
-              }
-              className="w-full border p-3 rounded"
-            />
-
-            <input type="file" onChange={handleLogoChange} />
-
-            <button className="w-full bg-red-600 text-white py-3 rounded">
-              Add Restaurant
-            </button>
-          </form>
-        </>
+              {restaurant.bio && (
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{restaurant.bio}</p>
+              )}
+              <button
+                onClick={() => handleDeleteRestaurant(restaurant.id)}
+                className="w-full btn-secondary text-red-600 border-red-500 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4 inline mr-2" />
+                Delete Restaurant
+              </button>
+            </div>
+          ))}
+        </div>
       )}
-    </>
+
+      {/* Add Restaurant Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Add Restaurant</h2>
+            <form onSubmit={handleAddRestaurant} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="input-field"
+                    placeholder="Restaurant name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="input-field"
+                    placeholder="restaurant@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact</label>
+                  <input
+                    type="tel"
+                    required
+                    value={formData.contact}
+                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                    className="input-field"
+                    placeholder="+1234567890"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="input-field"
+                    placeholder="Set password"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="input-field"
+                    placeholder="123 Main St, City"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+                  <input
+                    type="url"
+                    value={formData.logo}
+                    onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+                    className="input-field"
+                    placeholder="https://example.com/logo.jpg"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                  <textarea
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    className="input-field"
+                    rows="3"
+                    placeholder="Restaurant description..."
+                  />
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button type="submit" className="flex-1 btn-primary">
+                  Create Restaurant
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setFormData({
+                      name: '',
+                      email: '',
+                      address: '',
+                      contact: '',
+                      bio: '',
+                      logo: '',
+                      password: '',
+                    });
+                    setError('');
+                  }}
+                  className="flex-1 btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
+
+export default AdminRestaurants;
+

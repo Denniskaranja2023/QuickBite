@@ -1,250 +1,165 @@
-import { useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  CreditCard,
-  Smartphone,
-  Banknote,
-  CheckCircle,
-  ShoppingCart,
-} from 'lucide-react';
-import { ImageWithFallback } from '../../components/ImageWithFallback';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { CreditCard, CheckCircle, ArrowLeft } from 'lucide-react';
 
-export function OrderPaymentPage() {
-  const location = useLocation();
+function OrderPaymentPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { orderId } = useParams();
+  const location = useLocation();
+  const { order, payment_method } = location.state || {};
+  const [formData, setFormData] = useState({
+    payment_method: payment_method || 'mpesa',
+    amount: order?.total_price || 0,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const state = location.state; // no TS cast
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-  const [selectedMethod, setSelectedMethod] = useState(null); // 'mpesa' | 'cash' | null removed
-  const [mpesaPhone, setMpesaPhone] = useState('+254 712 345 678');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentComplete, setPaymentComplete] = useState(false);
+    try {
+      const response = await fetch(`/api/customer/orders/${id}/payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          amount: formData.amount,
+          method: formData.payment_method,
+        }),
+      });
 
-  if (!state || !state.order) {
-    navigate('/customer/orders');
-    return null;
-  }
+      const data = await response.json();
 
-  const order = state.order;
-
-  // Mock restaurant paybill data
-  const restaurantPaybill = {
-    paybill: '247247',
-    accountNumber: order.id,
+      if (response.ok) {
+        navigate('/customer/orders', { state: { success: 'Payment successful!' } });
+      } else {
+        setError(data.error || 'Payment failed');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePayment = () => {
-    setIsProcessing(true);
-
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      setPaymentComplete(true);
-
-      // Redirect to orders page after 3 seconds
-      setTimeout(() => {
-        navigate('/customer/orders');
-      }, 3000);
-    }, 2000);
-  };
-
-  if (paymentComplete) {
+  if (!order) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="bg-gradient-to-br from-green-500 to-green-600 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-            <CheckCircle className="w-12 h-12 text-white" />
-          </div>
-          <h2 className="text-3xl font-bold text-[#A60311] mb-2">
-            {selectedMethod === 'mpesa' ? 'Payment Initiated!' : 'Payment Confirmed!'}
-          </h2>
-          <p className="text-gray-600 mb-4">
-            {selectedMethod === 'mpesa'
-              ? 'Please check your phone for the M-Pesa prompt and enter your PIN to complete the payment.'
-              : 'Your cash payment has been recorded. Please have the exact amount ready for the delivery agent.'}
-          </p>
-          <p className="text-sm text-gray-500">Redirecting to orders page...</p>
+      <div className="max-w-2xl mx-auto">
+        <div className="card text-center py-12">
+          <p className="text-gray-500 text-lg mb-4">Order not found</p>
+          <button onClick={() => navigate('/customer/orders')} className="btn-primary">
+            Go to Orders
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      {/* Header */}
-      <div className="mb-8">
-        <button
-          onClick={() => navigate('/customer/orders')}
-          className="flex items-center gap-2 text-[#F20519] hover:text-[#A60311] transition-colors mb-4"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Orders
-        </button>
-        <h2 className="text-3xl font-bold text-[#A60311] mb-2">Payment Options</h2>
-        <p className="text-gray-600">Choose your preferred payment method</p>
-      </div>
+    <div className="max-w-2xl mx-auto">
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-6"
+      >
+        <ArrowLeft className="h-5 w-5" />
+        <span>Back</span>
+      </button>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Payment Methods */}
-        <div className="space-y-6">
-          {/* M-Pesa STK Push */}
-          <div
-            onClick={() => setSelectedMethod('mpesa')}
-            className={`bg-white rounded-2xl shadow-lg p-6 cursor-pointer transition-all duration-300 ${
-              selectedMethod === 'mpesa'
-                ? 'ring-4 ring-[#F20519] scale-105'
-                : 'hover:shadow-xl'
-            }`}
-          >
-            <div className="flex items-start gap-4">
-              <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-xl">
-                <Smartphone className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-[#A60311] mb-2">M-Pesa STK Push</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Pay instantly using M-Pesa. You'll receive a prompt on your phone to complete the payment.
-                </p>
-                {selectedMethod === 'mpesa' && (
-                  <div className="space-y-4 mt-4">
-                    <div>
-                      <label className="block text-sm font-bold text-[#A60311] mb-2">
-                        M-Pesa Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        value={mpesaPhone}
-                        onChange={(e) => setMpesaPhone(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-                        placeholder="+254 712 345 678"
-                      />
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-xl">
-                      <h4 className="font-bold text-green-800 mb-2">Payment Details</h4>
-                      <div className="space-y-1 text-sm text-green-700">
-                        <p><span className="font-bold">Paybill:</span> {restaurantPaybill.paybill}</p>
-                        <p><span className="font-bold">Account Number:</span> {restaurantPaybill.accountNumber}</p>
-                        <p><span className="font-bold">Amount:</span> KSh {order.total.toLocaleString()}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Cash Payment */}
-          <div
-            onClick={() => setSelectedMethod('cash')}
-            className={`bg-white rounded-2xl shadow-lg p-6 cursor-pointer transition-all duration-300 ${
-              selectedMethod === 'cash'
-                ? 'ring-4 ring-[#F20519] scale-105'
-                : 'hover:shadow-xl'
-            }`}
-          >
-            <div className="flex items-start gap-4">
-              <div className="bg-gradient-to-br from-[#D9895B] to-[#A0653E] p-4 rounded-xl">
-                <Banknote className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-[#A60311] mb-2">Cash on Delivery</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Pay with cash when your order arrives. Please have the exact amount ready for the delivery agent.
-                </p>
-                {selectedMethod === 'cash' && (
-                  <div className="bg-orange-50 p-4 rounded-xl mt-4">
-                    <h4 className="font-bold text-orange-800 mb-2">Important</h4>
-                    <ul className="space-y-1 text-sm text-orange-700 list-disc list-inside">
-                      <li>Have exact change ready (KSh {order.total.toLocaleString()})</li>
-                      <li>Payment is due upon delivery</li>
-                      <li>Delivery agent will provide receipt</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Confirm Payment Button */}
-          {selectedMethod && (
-            <button
-              onClick={handlePayment}
-              disabled={isProcessing}
-              className="w-full bg-gradient-to-r from-[#F20519] to-[#F20530] text-white py-4 rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all duration-300 flex items-center justify-center gap-2 font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Processing Payment...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-5 h-5" />
-                  {selectedMethod === 'mpesa' ? 'Send M-Pesa Prompt' : 'Confirm Cash Payment'}
-                </>
-              )}
-            </button>
-          )}
-        </div>
+      <div className="card">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Payment</h1>
+        <p className="text-gray-600 mb-8">Order #{order.id}</p>
 
         {/* Order Summary */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 h-fit sticky top-8">
-          <h3 className="text-2xl font-bold text-[#A60311] mb-6">Order Summary</h3>
+        <div className="bg-gray-50 rounded-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-gray-600">Total Amount</span>
+            <span className="text-3xl font-bold text-primary-600">${order.total_price?.toFixed(2) || '0.00'}</span>
+          </div>
+          <div className="text-sm text-gray-600">
+            <p>Delivery Address: {order.delivery_address}</p>
+          </div>
+        </div>
 
-          {/* Restaurant Info */}
-          <div className="flex items-center gap-3 mb-6 pb-6 border-b">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#F20519]">
-              <ImageWithFallback
-                src={order.restaurant.logo}
-                alt={order.restaurant.name}
-                className="w-full h-full object-cover"
-              />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Payment Method */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Payment Method
+            </label>
+            <div className="space-y-3">
+              {['mpesa', 'card', 'cash'].map((method) => (
+                <label
+                  key={method}
+                  className={`flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                    formData.payment_method === method
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment_method"
+                    value={method}
+                    checked={formData.payment_method === method}
+                    onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
+                    className="w-5 h-5 text-primary-500"
+                  />
+                  <CreditCard className="h-5 w-5 text-gray-600" />
+                  <span className="font-medium capitalize">{method}</span>
+                </label>
+              ))}
             </div>
-            <div>
-              <h4 className="font-bold text-[#A60311]">{order.restaurant.name}</h4>
-              <p className="text-sm text-gray-600">Order #{order.id}</p>
-            </div>
           </div>
 
-          {/* Order Items */}
-          <div className="space-y-3 mb-6 pb-6 border-b">
-            {order.items.map((item, index) => (
-              <div key={index} className="flex justify-between">
-                <span className="text-gray-700">
-                  {item.quantity}x {item.name}
-                </span>
-                <span className="font-bold text-[#A60311]">
-                  KSh {(item.price * item.quantity).toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Total */}
-          <div className="flex justify-between items-center text-xl font-bold mb-6">
-            <span className="text-[#A60311]">Total Amount:</span>
-            <span className="text-[#F20519]">KSh {order.total.toLocaleString()}</span>
-          </div>
-
-          {/* Delivery Address */}
-          <div className="bg-gradient-to-br from-[#F2F2F2] to-white p-4 rounded-xl">
-            <h4 className="font-bold text-[#A60311] mb-2">Delivery Address</h4>
-            <p className="text-sm text-gray-600">{order.deliveryAddress}</p>
-          </div>
-
-          {/* Payment Method Info */}
-          {selectedMethod && (
-            <div className="mt-4 bg-blue-50 p-4 rounded-xl">
-              <h4 className="font-bold text-blue-800 mb-1">Payment Method</h4>
-              <p className="text-sm text-blue-700">
-                {selectedMethod === 'mpesa' ? 'M-Pesa STK Push' : 'Cash on Delivery'}
+          {formData.payment_method === 'mpesa' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                Please complete the payment on your phone. You will receive a confirmation SMS.
               </p>
             </div>
           )}
-        </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-5 w-5" />
+                  <span>Pay ${order.total_price?.toFixed(2) || '0.00'}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
-    </>
+    </div>
   );
 }
+
+export default OrderPaymentPage;
+

@@ -1,4 +1,4 @@
-from flask import Flask, request, session, make_response
+from flask import Flask, request, session, make_response, send_from_directory
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
@@ -8,6 +8,10 @@ from datetime import datetime
 import pytz
 import os
 from extensions import db, bcrypt
+
+# Create uploads folder
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 #loads the variables from the .env file
 load_dotenv()
@@ -334,6 +338,7 @@ class RestaurantMenuItems(Resource):
             'name': m.name,
             'unit_price': m.unit_price,
             'image': m.image,
+            'description': m.description,
             'availability': m.availability,
             'restaurant_id': m.restaurant_id
         } for m in menu_items], 200)
@@ -349,6 +354,7 @@ class RestaurantMenuItems(Resource):
             name=data.get('name'),
             unit_price=data.get('unit_price'),
             image=data.get('image'),
+            description=data.get('description'),
             availability=data.get('availability', True),
             restaurant_id=restaurant_id
         )
@@ -377,6 +383,7 @@ class RestaurantMenuItemById(Resource):
             'name': menu_item.name,
             'unit_price': menu_item.unit_price,
             'image': menu_item.image,
+            'description': menu_item.description,
             'availability': menu_item.availability,
             'restaurant_id': menu_item.restaurant_id
         }, 200)
@@ -401,6 +408,8 @@ class RestaurantMenuItemById(Resource):
             menu_item.unit_price = data['unit_price']
         if 'image' in data:
             menu_item.image = data['image']
+        if 'description' in data:
+            menu_item.description = data['description']
         if 'availability' in data:
             menu_item.availability = data['availability']
         
@@ -551,6 +560,7 @@ class RestaurantDeliveryAgents(Resource):
         return make_response([{
             'id': a.id,
             'name': a.name,
+            'email': a.email,
             'contact': a.contact,
             'image': a.image,
             'rating': a.rating,
@@ -566,6 +576,7 @@ class RestaurantDeliveryAgents(Resource):
         
         agent = DeliveryAgent(
             name=data.get('name'),
+            email=data.get('email'),
             contact=data.get('contact'),
             image=data.get('image'),
             rating=data.get('rating', 5.0),
@@ -599,6 +610,36 @@ class RestaurantDeliveryAgentById(Resource):
         
         return make_response({'message': 'Delivery agent deleted'}, 200)
 
+
+class RestaurantTopCustomers(Resource):
+    def get(self):
+        if session.get('user_type') != 'restaurant':
+            return make_response({'error': 'Unauthorized'}, 403)
+        
+        restaurant_id = session.get('user_id')
+        
+        # Get top 5 customers by order count for this restaurant
+        top_customers = db.session.query(
+            Customer,
+            db.func.count(Order.id).label('order_count')
+        ).join(Order).filter(
+            Order.restaurant_id == restaurant_id
+        ).group_by(
+            Customer.id
+        ).order_by(
+            db.func.count(Order.id).desc()
+        ).limit(5).all()
+        
+        return make_response([{
+            'id': customer.id,
+            'name': customer.name,
+            'email': customer.email,
+            'contact': customer.contact,
+            'image': customer.image,
+            'order_count': order_count
+        } for customer, order_count in top_customers], 200)
+
+
 api.add_resource(RestaurantAccount, '/api/restaurant/account')
 api.add_resource(RestaurantMenuItems, '/api/restaurant/menuitems')
 api.add_resource(RestaurantMenuItemById, '/api/restaurant/menuitems/<int:id>')
@@ -607,6 +648,7 @@ api.add_resource(RestaurantOrderById, '/api/restaurant/orders/<int:id>')
 api.add_resource(RestaurantPayments, '/api/restaurant/payments')
 api.add_resource(RestaurantDeliveryAgents, '/api/restaurant/agents')
 api.add_resource(RestaurantDeliveryAgentById, '/api/restaurant/agents/<int:id>')
+api.add_resource(RestaurantTopCustomers, '/api/restaurant/top-customers')
 
 #4. Customer routes
 class CustomerAccount(Resource):
@@ -1180,6 +1222,33 @@ api.add_resource(DeliveryAgentOrders, '/api/agent/orders')
 api.add_resource(DeliveryAgentDeliveredOrders, '/api/agent/delivered-orders')
 api.add_resource(DeliveryAgentReviews, '/api/agent/reviews')
 api.add_resource(DeliveryAgentOrderById, '/api/agent/orders/<int:id>')
+
+#6. File upload endpoint
+class UploadImage(Resource):
+    def post(self):
+        if 'file' not in request.files:
+            return make_response({'error': 'No file provided'}, 400)
+        
+        file = request.files['file']
+        if file.filename == '':
+            return make_response({'error': 'No file selected'}, 400)
+        
+        if file:
+            # Generate unique filename
+            import uuid
+            filename = f"{uuid.uuid4()}{os.path.splitext(file.filename)[1]}"
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            
+            # Return the URL for the uploaded file
+            return make_response({'url': f'/uploads/{filename}'}, 200)
+
+api.add_resource(UploadImage, '/api/upload')
+
+# Serve uploaded files
+@app.route('/uploads/<filename>')
+def serve_upload(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)

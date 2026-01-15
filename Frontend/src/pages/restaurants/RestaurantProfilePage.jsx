@@ -1,213 +1,212 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Upload, Trash2 } from 'lucide-react';
-import { ImageWithFallback } from '../../components/ImageWithFallback';
+import { useState, useEffect } from 'react';
+import { User, Mail, MapPin, Phone, Save } from 'lucide-react';
 
-export function RestaurantProfilePage() {
-  const navigate = useNavigate();
-  const restaurant = {
-    name: 'Pizza Paradise',
-    logo: 'https://images.unsplash.com/photo-1563245738-9169ff58eccf?w=400',
-  };
-
-  const [profileData, setProfileData] = useState({
-    name: restaurant.name,
-    bio: 'We serve the best authentic Italian pizza in town with fresh ingredients and a passion for quality.',
-    contact: '+254 700 123 456',
-    paybill: '123456',
-    email: 'info@pizzaparadise.com',
-    location: 'Nairobi, Kenya',
-    image: restaurant.logo,
+function RestaurantProfilePage() {
+  const [restaurant, setRestaurant] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    address: '',
+    contact: '',
+    bio: '',
+    logo: '',
   });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
-  const handleProfileImageUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImagePreview(reader.result);
-        setProfileData({ ...profileData, image: reader.result });
-      };
-      reader.readAsDataURL(file);
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch('/api/restaurant/account', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRestaurant(data);
+        setFormData({
+          name: data.name || '',
+          email: data.email || '',
+          address: data.address || '',
+          contact: data.contact || '',
+          bio: data.bio || '',
+          logo: data.logo || '',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpdateProfile = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Profile updated successfully!');
-  };
+    setError('');
+    setSuccess('');
+    setSaving(true);
 
-  const handleDeleteAccount = () => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete your account? This action cannot be undone.'
-      )
-    ) {
-      alert('Account deleted. Redirecting...');
-      navigate('/login');
+    try {
+      const response = await fetch('/api/restaurant/account', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccess('Profile updated successfully!');
+        fetchProfile();
+      } else {
+        setError(data.error || 'Failed to update profile');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <>
+    <div className="max-w-4xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-[#A60311] mb-2">Restaurant Profile</h2>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Restaurant Profile</h1>
         <p className="text-gray-600">Manage your restaurant information</p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 max-w-4xl">
-        <form onSubmit={handleUpdateProfile} className="space-y-6">
-          {/* Logo Upload */}
-          <div>
-            <label className="block text-sm font-bold text-[#A60311] mb-2">
-              Restaurant Logo
-            </label>
-            <div className="flex items-center gap-6">
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#F20519]">
-                <ImageWithFallback
-                  src={profileImagePreview || profileData.image}
-                  alt="Restaurant logo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#F20519] to-[#F20530] text-white rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all">
-                  <Upload className="w-5 h-5" />
-                  Change Logo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProfileImageUpload}
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-xs text-gray-500 mt-2">
-                  Upload a high-quality logo (recommended: 512x512px)
-                </p>
-              </div>
+      <form onSubmit={handleSubmit} className="card space-y-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+            {success}
+          </div>
+        )}
+
+        {/* Logo */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+          <input
+            type="url"
+            value={formData.logo}
+            onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+            className="input-field"
+            placeholder="https://example.com/logo.jpg"
+          />
+          {formData.logo && (
+            <div className="mt-2">
+              <img src={formData.logo} alt="Logo preview" className="w-24 h-24 object-cover rounded-lg" />
             </div>
-          </div>
-
-          {/* Restaurant Name */}
-          <div>
-            <label className="block text-sm font-bold text-[#A60311] mb-2">
-              Restaurant Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={profileData.name}
-              onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-            />
-          </div>
-
-          {/* Bio */}
-          <div>
-            <label className="block text-sm font-bold text-[#A60311] mb-2">
-              Bio / Description *
-            </label>
-            <textarea
-              required
-              value={profileData.bio}
-              onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-              rows={4}
-            />
-          </div>
-
-          {/* Contact & Email */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-bold text-[#A60311] mb-2">
-                Contact Number *
-              </label>
-              <input
-                type="tel"
-                required
-                value={profileData.contact}
-                onChange={(e) =>
-                  setProfileData({ ...profileData, contact: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-[#A60311] mb-2">
-                Email Address *
-              </label>
-              <input
-                type="email"
-                required
-                value={profileData.email}
-                onChange={(e) =>
-                  setProfileData({ ...profileData, email: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Paybill & Location */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-bold text-[#A60311] mb-2">
-                M-Pesa Paybill *
-              </label>
-              <input
-                type="text"
-                required
-                value={profileData.paybill}
-                onChange={(e) =>
-                  setProfileData({ ...profileData, paybill: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-[#A60311] mb-2">
-                Location *
-              </label>
-              <input
-                type="text"
-                required
-                value={profileData.location}
-                onChange={(e) =>
-                  setProfileData({ ...profileData, location: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Update Button */}
-          <div className="pt-4">
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-[#F20519] to-[#F20530] text-white px-6 py-3 rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all duration-300 font-bold"
-            >
-              Update Profile
-            </button>
-          </div>
-        </form>
-
-        {/* Danger Zone */}
-        <div className="mt-8 pt-8 border-t border-gray-200">
-          <h3 className="text-xl font-bold text-red-600 mb-4">Danger Zone</h3>
-          <button
-            onClick={handleDeleteAccount}
-            className="w-full bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-colors font-bold flex items-center justify-center gap-2"
-          >
-            <Trash2 className="w-5 h-5" />
-            Delete Account
-          </button>
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            This action cannot be undone. Your account and all data will be permanently deleted.
-          </p>
+          )}
         </div>
-      </div>
-    </>
+
+        {/* Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+            <User className="h-4 w-4" />
+            <span>Restaurant Name</span>
+          </label>
+          <input
+            type="text"
+            required
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="input-field"
+            placeholder="Restaurant name"
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+            <Mail className="h-4 w-4" />
+            <span>Email</span>
+          </label>
+          <input
+            type="email"
+            required
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            className="input-field"
+            placeholder="restaurant@example.com"
+          />
+        </div>
+
+        {/* Contact */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+            <Phone className="h-4 w-4" />
+            <span>Contact Number</span>
+          </label>
+          <input
+            type="tel"
+            required
+            value={formData.contact}
+            onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+            className="input-field"
+            placeholder="+1234567890"
+          />
+        </div>
+
+        {/* Address */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+            <MapPin className="h-4 w-4" />
+            <span>Address</span>
+          </label>
+          <input
+            type="text"
+            required
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            className="input-field"
+            placeholder="123 Main St, City"
+          />
+        </div>
+
+        {/* Bio */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+          <textarea
+            value={formData.bio}
+            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+            className="input-field"
+            rows="4"
+            placeholder="Tell customers about your restaurant..."
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="btn-primary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Save className="h-5 w-5" />
+          <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+        </button>
+      </form>
+    </div>
   );
 }
+
+export default RestaurantProfilePage;
+

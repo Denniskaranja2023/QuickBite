@@ -2,13 +2,7 @@ import { useState, useEffect } from 'react';
 import { ShoppingBag, DollarSign, Users, Star, TrendingUp, Clock, Plus, Edit2, Trash2, X, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// Currency formatter for KSh
-const formatCurrency = (amount) => {
-  return `KSh ${Number(amount).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
 function RestaurantDashboard() {
-  const [restaurant, setRestaurant] = useState(null);
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalRevenue: 0,
@@ -41,20 +35,13 @@ function RestaurantDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [profileRes, ordersRes, paymentsRes, agentsRes, customersRes, menuRes] = await Promise.all([
-        fetch('/api/restaurant/account', { credentials: 'include' }),
+      const [ordersRes, paymentsRes, agentsRes, customersRes, menuRes] = await Promise.all([
         fetch('/api/restaurant/orders', { credentials: 'include' }),
         fetch('/api/restaurant/payments', { credentials: 'include' }),
         fetch('/api/restaurant/agents', { credentials: 'include' }),
         fetch('/api/restaurant/top-customers', { credentials: 'include' }),
         fetch('/api/restaurant/menuitems', { credentials: 'include' }),
       ]);
-
-      if (profileRes.ok) {
-        const profileData = await profileRes.json();
-        setRestaurant(profileData);
-        setStats(prev => ({ ...prev, averageRating: profileData.rating || 0 }));
-      }
 
       if (ordersRes.ok) {
         const orders = await ordersRes.json();
@@ -125,14 +112,12 @@ function RestaurantDashboard() {
         body: JSON.stringify(editForm),
       });
       if (response.ok) {
-        // Close modal first for better UX
+        setMenuItems(prev => prev.map(item => 
+          item.id === editingItem.id 
+            ? { ...item, ...editForm }
+            : item
+        ));
         setEditingItem(null);
-        // Re-fetch menu items to get updated data from server
-        const menuRes = await fetch('/api/restaurant/menuitems', { credentials: 'include' });
-        if (menuRes.ok) {
-          const items = await menuRes.json();
-          setMenuItems(items);
-        }
       }
     } catch (error) {
       console.error('Failed to update menu item:', error);
@@ -187,7 +172,7 @@ function RestaurantDashboard() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to {restaurant?.name || 'Your Restaurant'} Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
         <p className="text-gray-600">Overview of your restaurant</p>
       </div>
 
@@ -206,7 +191,7 @@ function RestaurantDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm mb-1">Total Revenue</p>
-              <p className="text-3xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
+              <p className="text-3xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
             </div>
             <DollarSign className="h-12 w-12 text-green-200" />
           </div>
@@ -353,7 +338,7 @@ function RestaurantDashboard() {
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-bold text-gray-900 text-lg">{item.name}</h3>
-                    <span className="text-lg font-bold text-primary-600">{formatCurrency(item.unit_price)}</span>
+                    <span className="text-lg font-bold text-primary-600">${item.unit_price?.toFixed(2)}</span>
                   </div>
                   {item.description && (
                     <p className="text-gray-500 text-sm line-clamp-2">{item.description}</p>
@@ -390,7 +375,7 @@ function RestaurantDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price (KSh)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -482,7 +467,7 @@ function RestaurantDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price (KSh)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
                 <input
                   type="number"
                   step="0.01"

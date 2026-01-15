@@ -1,278 +1,316 @@
-import React, { useState } from 'react';
-import { Users, Plus, Trash2, Mail, Phone, Upload, ArrowLeft } from 'lucide-react';
-import { ImageWithFallback } from '../../components/ImageWithFallback';
+import { useState, useEffect } from 'react';
+import { Users, Plus, Trash2, Star, Phone, Mail, Upload, User } from 'lucide-react';
 
-export function RestaurantAgentsPage() {
-  const [showAddAgent, setShowAddAgent] = useState(false);
-  const [agentImagePreview, setAgentImagePreview] = useState(null);
-  const [newAgent, setNewAgent] = useState({
+function RestaurantAgents() {
+  const [agents, setAgents] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     contact: '',
     image: '',
+    password: '',
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const [agents, setAgents] = useState([
-    {
-      id: 1,
-      name: 'David Martinez',
-      email: 'david.m@delivery.com',
-      contact: '+254 701 234 567',
-      image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400',
-    },
-    {
-      id: 2,
-      name: 'Sophie Taylor',
-      email: 'sophie.t@delivery.com',
-      contact: '+254 702 345 678',
-      image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400',
-    },
-    {
-      id: 3,
-      name: 'Kevin Wilson',
-      email: 'kevin.w@delivery.com',
-      contact: '+254 703 456 789',
-      image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400',
-    },
-  ]);
+  useEffect(() => {
+    fetchAgents();
+  }, []);
 
-  const handleAgentImageUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAgentImagePreview(reader.result);
-        setNewAgent({ ...newAgent, image: reader.result });
-      };
-      reader.readAsDataURL(file);
+  const fetchAgents = async () => {
+    try {
+      const response = await fetch('/api/restaurant/agents', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAgents(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddAgent = (e) => {
+  const handleImageUpload = async (file) => {
+    if (!file) return null;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      setUploading(true);
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.url;
+      }
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+    } finally {
+      setUploading(false);
+    }
+    return null;
+  };
+
+  const handleAddAgent = async (e) => {
     e.preventDefault();
-    const agent = {
-      id: agents.length + 1,
-      name: newAgent.name,
-      email: newAgent.email,
-      contact: newAgent.contact,
-      image:
-        agentImagePreview ||
-        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400',
-    };
-    setAgents([...agents, agent]);
-    setNewAgent({
-      name: '',
-      email: '',
-      contact: '',
-      image: '',
-    });
-    setAgentImagePreview(null);
-    setShowAddAgent(false);
-    alert('Delivery agent added successfully!');
-  };
+    setError('');
 
-  const handleDeleteAgent = (id, name) => {
-    if (window.confirm(`Are you sure you want to remove ${name}?`)) {
-      setAgents(agents.filter((agent) => agent.id !== id));
+    // Upload image first if a file is selected
+    let imageUrl = formData.image;
+    if (imageFile) {
+      const uploadedUrl = await handleImageUpload(imageFile);
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      }
+    }
+
+    try {
+      const response = await fetch('/api/restaurant/agents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ ...formData, image: imageUrl }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        fetchAgents();
+        setShowAddModal(false);
+        setFormData({ name: '', email: '', contact: '', image: '', password: '' });
+        setImageFile(null);
+      } else {
+        setError(data.error || 'Failed to create agent');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
     }
   };
 
-  if (showAddAgent) {
+  const handleDeleteAgent = async (agentId) => {
+    if (!window.confirm('Are you sure you want to delete this agent?')) return;
+
+    try {
+      const response = await fetch(`/api/restaurant/agents/${agentId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        fetchAgents();
+      }
+    } catch (error) {
+      console.error('Failed to delete agent:', error);
+    }
+  };
+
+  if (loading) {
     return (
-      <>
-        <div className="mb-8">
-          <button
-            onClick={() => {
-              setShowAddAgent(false);
-              setNewAgent({ name: '', email: '', contact: '', image: '' });
-              setAgentImagePreview(null);
-            }}
-            className="flex items-center gap-2 text-[#F20519] hover:text-[#A60311] transition-colors mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Agents
-          </button>
-          <h2 className="text-3xl font-bold text-[#A60311] mb-2">Add New Agent</h2>
-          <p className="text-gray-600">Add a delivery agent to your team</p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 max-w-3xl">
-          <form onSubmit={handleAddAgent} className="space-y-6">
-            {/* Agent Photo */}
-            <div>
-              <label className="block text-sm font-bold text-[#A60311] mb-2">
-                Agent Photo
-              </label>
-              <div className="flex items-center gap-6">
-                {agentImagePreview ? (
-                  <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-[#F20519]">
-                    <img
-                      src={agentImagePreview}
-                      alt="Agent preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-32 h-32 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
-                    <Upload className="w-8 h-8 text-gray-400" />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#F20519] to-[#F20530] text-white rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all">
-                    <Upload className="w-5 h-5" />
-                    Upload Photo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAgentImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Upload a clear photo of the agent
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Full Name */}
-            <div>
-              <label className="block text-sm font-bold text-[#A60311] mb-2">
-                Full Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={newAgent.name}
-                onChange={(e) =>
-                  setNewAgent({ ...newAgent, name: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-                placeholder="Enter agent's full name"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-bold text-[#A60311] mb-2">
-                Email Address *
-              </label>
-              <input
-                type="email"
-                required
-                value={newAgent.email}
-                onChange={(e) =>
-                  setNewAgent({ ...newAgent, email: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-                placeholder="agent@example.com"
-              />
-            </div>
-
-            {/* Contact */}
-            <div>
-              <label className="block text-sm font-bold text-[#A60311] mb-2">
-                Contact Number *
-              </label>
-              <input
-                type="tel"
-                required
-                value={newAgent.contact}
-                onChange={(e) =>
-                  setNewAgent({ ...newAgent, contact: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F20519] focus:border-transparent"
-                placeholder="+254 700 000 000"
-              />
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-4 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAddAgent(false);
-                  setNewAgent({ name: '', email: '', contact: '', image: '' });
-                  setAgentImagePreview(null);
-                }}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 bg-gradient-to-r from-[#F20519] to-[#F20530] text-white px-6 py-3 rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Add Agent
-              </button>
-            </div>
-          </form>
-        </div>
-      </>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+      </div>
     );
   }
 
-  // Main Agents List
   return (
-    <>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-[#A60311] mb-2">Delivery Agents</h2>
-        <p className="text-gray-600">Manage your delivery team</p>
+    <div className="max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Delivery Agents</h1>
+          <p className="text-gray-600">Manage your delivery agents</p>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="btn-primary flex items-center space-x-2"
+        >
+          <Plus className="h-5 w-5" />
+          <span>Add Agent</span>
+        </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Users className="w-6 h-6 text-[#F20519]" />
-            <h3 className="text-2xl font-bold text-[#A60311]">Active Agents</h3>
-          </div>
-          <button
-            onClick={() => setShowAddAgent(true)}
-            className="bg-gradient-to-r from-[#F20519] to-[#F20530] text-white px-6 py-3 rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all duration-300 flex items-center gap-2 shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-            Add Agent
+      {agents.length === 0 ? (
+        <div className="card text-center py-12">
+          <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg mb-4">No agents yet</p>
+          <button onClick={() => setShowAddModal(true)} className="btn-primary">
+            Add Your First Agent
           </button>
         </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {agents.map((agent) => (
-            <div
-              key={agent.id}
-              className="bg-gradient-to-br from-[#F2F2F2] to-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F20519]/20"
-            >
-              <div className="flex flex-col items-center text-center">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#D9895B] mb-4">
-                  <ImageWithFallback
-                    src={agent.image}
-                    alt={agent.name}
-                    className="w-full h-full object-cover"
-                  />
+            <div key={agent.id} className="card">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary-200 to-accent-200 rounded-full flex items-center justify-center overflow-hidden">
+                  {agent.image ? (
+                    <img src={agent.image} alt={agent.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="h-8 w-8 text-gray-400" />
+                  )}
                 </div>
-                <h4 className="text-xl font-bold text-[#A60311] mb-2">{agent.name}</h4>
-                <div className="space-y-2 w-full mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail className="w-4 h-4 text-[#F20519]" />
-                    <span className="truncate">{agent.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="w-4 h-4 text-[#F20519]" />
-                    <span>{agent.contact}</span>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900">{agent.name}</h3>
+                  <div className="flex items-center space-x-1 mt-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm text-gray-600">{agent.rating?.toFixed(1) || '5.0'}</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDeleteAgent(agent.id, agent.name)}
-                  className="w-full bg-gradient-to-r from-[#F20519] to-[#F20530] text-white py-2.5 rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all duration-300 flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Remove Agent
-                </button>
               </div>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <Phone className="h-4 w-4" />
+                  <span>{agent.contact}</span>
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <Mail className="h-4 w-4" />
+                  <span>{agent.email}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDeleteAgent(agent.id)}
+                className="w-full btn-secondary text-red-600 border-red-500 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4 inline mr-2" />
+                Delete Agent
+              </button>
             </div>
           ))}
         </div>
-      </div>
-    </>
+      )}
+
+      {/* Add Agent Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Add Delivery Agent</h2>
+            <form onSubmit={handleAddAgent} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="input-field"
+                  placeholder="Agent name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="input-field"
+                  placeholder="agent@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contact</label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.contact}
+                  onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                  className="input-field"
+                  placeholder="Phone number"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Image (optional)</label>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <label className="flex-1 cursor-pointer bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition-colors">
+                      <Upload className="h-5 w-5 inline mr-2" />
+                      <span className="text-sm">Choose file</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setImageFile(e.target.files[0])}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {imageFile && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600 truncate max-w-[200px]">{imageFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setImageFile(null)}
+                        className="text-sm text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                  {formData.image && !imageFile && (
+                    <div className="relative w-16 h-16">
+                      <img src={formData.image} alt="Preview" className="w-full h-full object-cover rounded-full" />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, image: '' })}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="input-field"
+                  placeholder="Set password"
+                />
+              </div>
+              <div className="flex items-center space-x-3">
+                <button type="submit" className="flex-1 btn-primary">
+                  Create Agent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setFormData({ name: '', email: '', contact: '', image: '', password: '' });
+                    setImageFile(null);
+                    setError('');
+                  }}
+                  className="flex-1 btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
+
+export default RestaurantAgents;
+

@@ -1,206 +1,118 @@
-import { useState } from 'react';
-import { Package } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ShoppingBag, Star, TrendingUp, Clock } from 'lucide-react';
 
-export function AgentDashboard() {
-  // Mock orders data
-  const [orders, setOrders] = useState([
-    {
-      id: '1',
-      customerName: 'Sarah Johnson',
-      customerImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
-      address: '123 Main Street, Apartment 4B, Nairobi',
-      contact: '0722123456',
-      items: ['Grilled Chicken Burger', 'French Fries', 'Coke'],
-      paymentExpected: 1250,
-      status: 'undelivered'
-    },
-    {
-      id: '2',
-      customerName: 'Michael Ochieng',
-      customerImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
-      address: '456 Kimathi Avenue, Westlands, Nairobi',
-      contact: '0733987654',
-      items: ['Margherita Pizza', 'Garlic Bread'],
-      paymentExpected: 1800,
-      status: 'undelivered'
-    },
-    {
-      id: '3',
-      customerName: 'Grace Wanjiru',
-      customerImage: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop',
-      address: '789 Ngong Road, Karen, Nairobi',
-      contact: '0711234567',
-      items: ['Beef Stir Fry', 'Fried Rice', 'Spring Rolls'],
-      paymentExpected: 1950,
-      status: 'delivered',
-      deliveryTime: '2026-01-14 11:30 AM'
-    },
-    {
-      id: '4',
-      customerName: 'David Kamau',
-      customerImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop',
-      address: '321 Mombasa Road, Industrial Area, Nairobi',
-      contact: '0744556677',
-      items: ['Fish and Chips', 'Coleslaw'],
-      paymentExpected: 1100,
-      status: 'delivered',
-      deliveryTime: '2026-01-14 10:15 AM'
-    },
-    {
-      id: '5',
-      customerName: 'Amina Hassan',
-      customerImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop',
-      address: '654 Waiyaki Way, Parklands, Nairobi',
-      contact: '0755443322',
-      items: ['Chicken Biryani', 'Naan Bread', 'Mango Lassi'],
-      paymentExpected: 2100,
-      status: 'undelivered'
+function AgentDashboard() {
+  const [stats, setStats] = useState({
+    totalDeliveries: 0,
+    averageRating: 0,
+    completedToday: 0,
+  });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Note: You'll need to create these endpoints
+      // const response = await fetch('/api/agent/orders', { credentials: 'include' });
+      // if (response.ok) {
+      //   const data = await response.json();
+      //   setRecentOrders(data.slice(0, 5));
+      //   setStats(prev => ({ ...prev, totalDeliveries: data.length }));
+      // }
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
-  ]);
-
-  const markAsDelivered = (orderId) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId
-          ? { 
-              ...order, 
-              status: 'delivered', 
-              deliveryTime: new Date().toLocaleString('en-US', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              })
-            }
-          : order
-      )
-    );
   };
 
-  const undeliveredOrders = orders.filter(order => order.status === 'undelivered');
-  const deliveredOrders = orders.filter(order => order.status === 'delivered');
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-gray-900 mb-2">My Deliveries</h1>
-        <p className="text-gray-600">Manage your delivery orders and track your performance</p>
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+        <p className="text-gray-600">Your delivery performance</p>
       </div>
 
-      {/* Undelivered Orders Section */}
-      <div>
-        <h2 className="text-gray-900 mb-4">Active Orders ({undeliveredOrders.length})</h2>
-        {undeliveredOrders.length === 0 ? (
-          <div className="bg-white rounded-lg p-8 text-center">
-            <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-500">No active orders at the moment</p>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="card bg-gradient-to-br from-primary-500 to-primary-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-primary-100 text-sm mb-1">Total Deliveries</p>
+              <p className="text-3xl font-bold">{stats.totalDeliveries}</p>
+            </div>
+            <ShoppingBag className="h-12 w-12 text-primary-200" />
+          </div>
+        </div>
+        <div className="card bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-yellow-100 text-sm mb-1">Average Rating</p>
+              <p className="text-3xl font-bold">{stats.averageRating.toFixed(1)}</p>
+            </div>
+            <Star className="h-12 w-12 text-yellow-200" />
+          </div>
+        </div>
+        <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm mb-1">Completed Today</p>
+              <p className="text-3xl font-bold">{stats.completedToday}</p>
+            </div>
+            <Clock className="h-12 w-12 text-green-200" />
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Orders */}
+      <div className="card">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Deliveries</h2>
+        {recentOrders.length === 0 ? (
+          <div className="text-center py-12">
+            <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No deliveries yet</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {undeliveredOrders.map(order => (
-              <div key={order.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-[#F20519]">
-                {/* Customer Info */}
-                <div className="flex items-start gap-4 mb-4">
-                  <img
-                    src={order.customerImage}
-                    alt={order.customerName}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 mb-1">{order.customerName}</h3>
-                    <p className="text-sm text-gray-600">{order.contact}</p>
+          <div className="space-y-4">
+            {recentOrders.map((order) => (
+              <div
+                key={order.id}
+                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">Order #{order.id}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {order.delivery_address || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-gray-900">${order.total_price?.toFixed(2) || '0.00'}</p>
+                    <span className="inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 bg-green-100 text-green-800">
+                      Delivered
+                    </span>
                   </div>
                 </div>
-
-                {/* Address */}
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Delivery Address:</p>
-                  <p className="text-sm text-gray-600">{order.address}</p>
-                </div>
-
-                {/* Items Ordered */}
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Items Ordered:</p>
-                  <ul className="space-y-1">
-                    {order.items.map((item, idx) => (
-                      <li key={idx} className="text-sm text-gray-600 flex items-start">
-                        <span className="text-[#F20519] mr-2">•</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Payment */}
-                <div className="mb-4 pb-4 border-b border-gray-200">
-                  <p className="text-sm text-gray-700">
-                    Payment Expected: <span className="font-semibold text-[#F20519]">KSh {order.paymentExpected.toLocaleString()}</span>
-                  </p>
-                </div>
-
-                {/* Status Badge */}
-                <div className="mb-4">
-                  <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-sm rounded-full">
-                    Undelivered
-                  </span>
-                </div>
-
-                {/* Action Button */}
-                <button
-                  onClick={() => markAsDelivered(order.id)}
-                  className="w-full bg-[#F20519] text-white py-2 rounded-lg hover:bg-[#A60311] transition-colors"
-                >
-                  Mark as Delivered
-                </button>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Delivered Orders Table */}
-      <div>
-        <h2 className="text-gray-900 mb-4">Delivered Orders ({deliveredOrders.length})</h2>
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#F20519] text-white">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Customer Name</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Time of Delivery</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Payment Expected</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Items Ordered</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {deliveredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                      No delivered orders yet
-                    </td>
-                  </tr>
-                ) : (
-                  deliveredOrders.map(order => (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900">{order.customerName}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{order.deliveryTime}</td>
-                      <td className="px-6 py-4 text-sm font-semibold text-[#F20519]">
-                        KSh {order.paymentExpected.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {order.items.join(', ')}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
+
+export default AgentDashboard;
+

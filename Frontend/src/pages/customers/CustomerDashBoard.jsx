@@ -1,147 +1,197 @@
-import { useNavigate } from 'react-router-dom';
-import { Store, PackageCheck, PackageX, TrendingUp } from 'lucide-react';
-import { ImageWithFallback } from '../../components/ImageWithFallback';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { UtensilsCrossed, ShoppingBag, CreditCard, Star, ArrowRight, MapPin, Clock } from 'lucide-react';
 
-export function CustomerDashboard() {
-  const navigate = useNavigate();
+function CustomerDashBoard() {
+  const [restaurants, setRestaurants] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalSpent: 0,
+    favoriteRestaurants: 0,
+  });
 
-  // Mock data for restaurants
-  const restaurants = [
-    {
-      id: 1,
-      name: 'Pizza Paradise',
-      logo: 'https://images.unsplash.com/photo-1563245738-9169ff58eccf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaXp6YSUyMHJlc3RhdXJhbnR8ZW58MXx8fHwxNzY4Mjk0MjYxfDA&ixlib=rb-4.1.0&q=80&w=1080',
-    },
-    {
-      id: 2,
-      name: 'Burger House',
-      logo: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400',
-    },
-    {
-      id: 3,
-      name: 'Sushi Master',
-      logo: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400',
-    },
-    {
-      id: 4,
-      name: 'Taco Fiesta',
-      logo: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400',
-    },
-    {
-      id: 5,
-      name: 'Indian Spice',
-      logo: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400',
-    },
-    {
-      id: 6,
-      name: 'Pasta Palace',
-      logo: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400',
-    },
-    {
-      id: 7,
-      name: 'BBQ Station',
-      logo: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400',
-    },
-    {
-      id: 8,
-      name: 'Smoothie Bar',
-      logo: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=400',
-    },
-  ];
+  useEffect(() => {
+    fetchRestaurants();
+    fetchOrders();
+  }, []);
 
-  // Stats
-  const stats = {
-    totalRestaurants: restaurants.length,
-    deliveredOrders: 24,
-    pendingOrders: 2,
+  const fetchRestaurants = async () => {
+    try {
+      const response = await fetch('/api/admin/restaurants', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRestaurants(data.slice(0, 6));
+      }
+    } catch (error) {
+      console.error('Failed to fetch restaurants:', error);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch('/api/customer/orders', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data);
+        const totalSpent = data.reduce((sum, order) => sum + (order.total_price || 0), 0);
+        setStats({
+          totalOrders: data.length,
+          totalSpent,
+          favoriteRestaurants: new Set(data.map(o => o.restaurant_id)).size,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+    }
   };
 
   return (
-    <>
-      {/* Page Title */}
+    <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-[#A60311] mb-2">Welcome Back!</h2>
-        <p className="text-gray-600">Explore restaurants and track your orders</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back!</h1>
+        <p className="text-gray-600">Here's what's happening with your orders</p>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
-        {/* Total Restaurants */}
-        <div className="bg-gradient-to-br from-[#F20519] to-[#F20530] rounded-2xl p-6 text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-white/20 p-3 rounded-xl">
-              <Store className="w-8 h-8" />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="card bg-gradient-to-br from-primary-500 to-primary-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-primary-100 text-sm mb-1">Total Orders</p>
+              <p className="text-3xl font-bold">{stats.totalOrders}</p>
             </div>
-            <TrendingUp className="w-6 h-6 text-white/80" />
+            <ShoppingBag className="h-12 w-12 text-primary-200" />
           </div>
-          <h3 className="text-white/90 text-sm mb-1">Total Restaurants</h3>
-          <p className="text-3xl font-bold">{stats.totalRestaurants}</p>
-          <p className="text-xs text-white/70 mt-1">Available on platform</p>
         </div>
-
-        {/* Delivered Orders */}
-        <div className="bg-gradient-to-br from-[#D9895B] to-[#A0653E] rounded-2xl p-6 text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-white/20 p-3 rounded-xl">
-              <PackageCheck className="w-8 h-8" />
+        <div className="card bg-gradient-to-br from-accent-500 to-accent-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-accent-100 text-sm mb-1">Total Spent</p>
+              <p className="text-3xl font-bold">${stats.totalSpent.toFixed(2)}</p>
             </div>
-            <TrendingUp className="w-6 h-6 text-white/80" />
+            <CreditCard className="h-12 w-12 text-accent-200" />
           </div>
-          <h3 className="text-white/90 text-sm mb-1">Delivered Orders</h3>
-          <p className="text-3xl font-bold">{stats.deliveredOrders}</p>
-          <p className="text-xs text-white/70 mt-1">All time</p>
         </div>
-
-        {/* Pending Orders */}
-        <div className="bg-gradient-to-br from-[#A60311] to-[#7A0209] rounded-2xl p-6 text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-white/20 p-3 rounded-xl">
-              <PackageX className="w-8 h-8" />
+        <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm mb-1">Restaurants</p>
+              <p className="text-3xl font-bold">{stats.favoriteRestaurants}</p>
             </div>
-            <TrendingUp className="w-6 h-6 text-white/80" />
+            <Star className="h-12 w-12 text-green-200" />
           </div>
-          <h3 className="text-white/90 text-sm mb-1">Pending Orders</h3>
-          <p className="text-3xl font-bold">{stats.pendingOrders}</p>
-          <p className="text-xs text-white/70 mt-1">In progress</p>
         </div>
       </div>
 
-      {/* Restaurants Section */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Store className="w-6 h-6 text-[#F20519]" />
-          <h3 className="text-2xl font-bold text-[#A60311]">Available Restaurants</h3>
+      {/* Recent Orders */}
+      <div className="card mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Recent Orders</h2>
+          <Link
+            to="/customer/orders"
+            className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-1"
+          >
+            <span>View all</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {restaurants.map((restaurant) => (
-            <button
-              key={restaurant.id}
-              onClick={() => navigate(`/customer/restaurant/${restaurant.id}/menu`)}
-              className="bg-gradient-to-br from-[#F2F2F2] to-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-left"
-            >
-              <div className="relative h-40">
-                <ImageWithFallback
-                  src={restaurant.logo}
-                  alt={restaurant.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <h4 className="absolute bottom-3 left-3 right-3 text-xl font-bold text-white">
-                  {restaurant.name}
-                </h4>
-              </div>
-              <div className="p-4">
+        {orders.length === 0 ? (
+          <div className="text-center py-12">
+            <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No orders yet</p>
+            <Link to="/" className="text-primary-600 hover:text-primary-700 font-medium mt-2 inline-block">
+              Browse restaurants
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {orders.slice(0, 5).map((order) => (
+              <div
+                key={order.id}
+                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">View Menu</span>
-                  <div className="bg-[#F20519] text-white px-3 py-1 rounded-full text-xs">
-                    Open
+                  <div>
+                    <p className="font-semibold text-gray-900">Order #{order.id}</p>
+                    <p className="text-sm text-gray-600">
+                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-gray-900">${order.total_price?.toFixed(2) || '0.00'}</p>
+                    <span
+                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        order.payment_status
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {order.payment_status ? 'Paid' : 'Pending'}
+                    </span>
                   </div>
                 </div>
               </div>
-            </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Popular Restaurants */}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Popular Restaurants</h2>
+          <Link
+            to="/"
+            className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-1"
+          >
+            <span>Browse all</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {restaurants.map((restaurant) => (
+            <Link
+              key={restaurant.id}
+              to={`/customer/restaurants/${restaurant.id}/menu`}
+              className="card hover:scale-105 transition-transform duration-300 cursor-pointer"
+            >
+              <div className="aspect-video bg-gradient-to-br from-primary-200 to-accent-200 rounded-lg mb-4 flex items-center justify-center">
+                {restaurant.logo ? (
+                  <img src={restaurant.logo} alt={restaurant.name} className="h-full w-full object-cover rounded-lg" />
+                ) : (
+                  <UtensilsCrossed className="h-16 w-16 text-primary-400" />
+                )}
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{restaurant.name}</h3>
+              <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                <div className="flex items-center space-x-1">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span>{restaurant.rating?.toFixed(1) || '4.5'}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <MapPin className="h-4 w-4" />
+                  <span className="truncate">{restaurant.address}</span>
+                </div>
+              </div>
+              {restaurant.bio && (
+                <p className="text-gray-600 text-sm line-clamp-2 mb-4">{restaurant.bio}</p>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-primary-600 font-semibold">View Menu</span>
+                <ArrowRight className="h-5 w-5 text-primary-600" />
+              </div>
+            </Link>
           ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }
+
+export default CustomerDashBoard;
+

@@ -1,75 +1,88 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Mail, Lock } from 'lucide-react';
-import { WhatsAppButton } from '../components/WhatsappButton';
+import { Link, useNavigate } from 'react-router-dom';
+import { UtensilsCrossed, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-export function Login() {
-  const navigate = useNavigate();
+function Login({ setUser }) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    userType: 'customer',
+    user_type: 'customer',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log('Login attempt:', formData);
+    setError('');
+    setLoading(true);
 
-    // Navigate to appropriate dashboard based on user type
-    if (formData.userType === 'admin') {
-      navigate('/admin/dashboard');
-    } else if (formData.userType === 'restaurant') {
-      navigate('/restaurant/dashboard');
-    } else if (formData.userType === 'delivery') {
-      navigate('/agent/dashboard');
-    } else if (formData.userType === 'customer') {
-      navigate('/customer/dashboard');
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUser(data);
+        navigate(`/${data.user_type}/dashboard`);
+      } else {
+        setError(data.error || 'Login failed. Please check your credentials.');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const userTypes = [
-    { value: 'customer', label: 'Customer' },
-    { value: 'restaurant', label: 'Restaurant' },
-    { value: 'delivery', label: 'Delivery Agent' },
-    { value: 'admin', label: 'Admin' },
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F20519] via-[#F20530] to-[#A60311] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center gap-2 bg-white rounded-full px-6 py-3 shadow-lg">
-            <ShoppingBag className="w-8 h-8 text-[#F20519]" />
-            <h1 className="text-2xl font-bold text-[#A60311]">QuickBite</h1>
-          </div>
+          <Link to="/" className="inline-flex items-center space-x-2">
+            <UtensilsCrossed className="h-10 w-10 text-primary-500" />
+            <span className="text-3xl font-bold text-gray-900">QuickBite</span>
+          </Link>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome back</h2>
+          <p className="mt-2 text-sm text-gray-600">Sign in to your account</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-3xl shadow-2xl p-8">
-          <h2 className="text-3xl font-bold text-[#A60311] mb-2 text-center">Welcome Back</h2>
-          <p className="text-gray-600 text-center mb-8">Sign in to continue ordering delicious food</p>
-
+        <div className="card">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {error}
+              </div>
+            )}
+
             {/* User Type Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 I am a
               </label>
               <div className="grid grid-cols-2 gap-3">
-                {userTypes.map((type) => (
+                {['customer', 'restaurant', 'agent', 'admin'].map((type) => (
                   <button
-                    key={type.value}
+                    key={type}
                     type="button"
-                    onClick={() => setFormData({ ...formData, userType: type.value })}
-                    className={`p-3 rounded-xl border-2 transition-all duration-300 ${
-                      formData.userType === type.value
-                        ? 'border-[#F20519] bg-[#F20519] text-white'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-[#F20519]'
+                    onClick={() => setFormData({ ...formData, user_type: type })}
+                    className={`py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
+                      formData.user_type === type
+                        ? 'bg-primary-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {type.label}
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
                   </button>
                 ))}
               </div>
@@ -78,18 +91,19 @@ export function Login() {
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+                Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
-                  type="email"
                   id="email"
+                  name="email"
+                  type="email"
+                  required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#F20519] focus:outline-none transition-colors"
-                  placeholder="your@email.com"
-                  required
+                  className="input-field pl-10"
+                  placeholder="you@example.com"
                 />
               </div>
             </div>
@@ -100,65 +114,50 @@ export function Login() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
-                  type="password"
                   id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#F20519] focus:outline-none transition-colors"
+                  className="input-field pl-10 pr-10"
                   placeholder="Enter your password"
-                  required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
-            </div>
-
-            {/* Forgot Password */}
-            <div className="text-right">
-              <button
-                type="button"
-                className="text-sm text-[#F20519] hover:text-[#A60311] transition-colors"
-              >
-                Forgot Password?
-              </button>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-[#F20519] to-[#F20530] text-white py-3.5 rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all duration-300 shadow-lg"
+              disabled={loading}
+              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
-          {/* Signup Link */}
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
+            <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <button
-                onClick={() => navigate('/signup')}
-                className="text-[#F20519] hover:text-[#A60311] font-medium transition-colors"
-              >
-                Sign up here
-              </button>
+              <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-500">
+                Sign up
+              </Link>
             </p>
-          </div>
-
-          {/* Back to Home */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => navigate('/')}
-              className="text-gray-500 hover:text-gray-700 text-sm transition-colors"
-            >
-              ← Back to Home
-            </button>
           </div>
         </div>
       </div>
-
-      {/* WhatsApp Button */}
-      <WhatsAppButton />
     </div>
   );
 }
+
+export default Login;
+

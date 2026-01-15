@@ -1,332 +1,235 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  ShoppingCart,
-  Plus,
-  Minus,
-  Trash2,
-  Store,
-} from 'lucide-react';
-import { ImageWithFallback } from '../../components/ImageWithFallback';
+import { Plus, Minus, ShoppingCart, ArrowLeft, Star } from 'lucide-react';
 
-export function RestaurantMenuPage() {
-  const { restaurantId } = useParams();
+function RestaurantMenuPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [cart, setCart] = useState([]);
-  const [showCart, setShowCart] = useState(false);
+  const [restaurant, setRestaurant] = useState(null);
+  const [menuItems, setMenuItems] = useState([]);
+  const [cart, setCart] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  // Mock restaurant data
-  const restaurants = {
-    '1': {
-      name: 'Pizza Paradise',
-      logo: 'https://images.unsplash.com/photo-1563245738-9169ff58eccf?w=400',
-    },
-    '2': {
-      name: 'Burger House',
-      logo: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400',
-    },
-    '3': {
-      name: 'Sushi Master',
-      logo: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400',
-    },
-    '4': {
-      name: 'Taco Fiesta',
-      logo: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400',
-    },
-    '5': {
-      name: 'Indian Spice',
-      logo: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400',
-    },
-    '6': {
-      name: 'Pasta Palace',
-      logo: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400',
-    },
-    '7': {
-      name: 'BBQ Station',
-      logo: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400',
-    },
-    '8': {
-      name: 'Smoothie Bar',
-      logo: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=400',
-    },
-  };
+  useEffect(() => {
+    fetchRestaurant();
+    fetchMenuItems();
+  }, [id]);
 
-  const restaurant = restaurants[restaurantId || '1'] || restaurants['1'];
-
-  // Mock menu items by restaurant
-  const menuItemsByRestaurant = {
-    '1': [
-      {
-        id: 1,
-        name: 'Margherita Pizza',
-        image: 'https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=400',
-        description: 'Classic tomato sauce, mozzarella, and fresh basil',
-        price: 1200,
-      },
-      {
-        id: 2,
-        name: 'Pepperoni Pizza',
-        image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400',
-        description: 'Loaded with pepperoni and extra cheese',
-        price: 1500,
-      },
-      {
-        id: 3,
-        name: 'BBQ Chicken Pizza',
-        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
-        description: 'BBQ sauce, grilled chicken, onions, and cilantro',
-        price: 1600,
-      },
-      {
-        id: 4,
-        name: 'Veggie Supreme',
-        image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=400',
-        description: 'Bell peppers, mushrooms, olives, and onions',
-        price: 1300,
-      },
-    ],
-    '2': [
-      {
-        id: 5,
-        name: 'Classic Burger',
-        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400',
-        description: 'Beef patty, lettuce, tomato, and special sauce',
-        price: 800,
-      },
-      {
-        id: 6,
-        name: 'Cheese Burger',
-        image: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=400',
-        description: 'Double cheese, beef patty, pickles, and onions',
-        price: 950,
-      },
-      {
-        id: 7,
-        name: 'Chicken Burger',
-        image: 'https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400',
-        description: 'Crispy chicken, lettuce, mayo, and tomato',
-        price: 850,
-      },
-    ],
-  };
-
-  const menuItems = menuItemsByRestaurant[restaurantId || '1'] || menuItemsByRestaurant['1'];
-
-  const addToCart = (item) => {
-    const existingItem = cart.find((cartItem) => cartItem.id === item.id);
-    if (existingItem) {
-      setCart(
-        cart.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        )
-      );
-    } else {
-      setCart([...cart, { ...item, quantity: 1 }]);
+  const fetchRestaurant = async () => {
+    try {
+      const response = await fetch(`/api/admin/restaurants/${id}`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRestaurant(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch restaurant:', error);
     }
   };
 
-  const updateQuantity = (id, delta) => {
-    setCart(
-      cart
-        .map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity + delta } : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
+  const fetchMenuItems = async () => {
+    try {
+      const response = await fetch(`/api/restaurant/menuitems`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const filtered = data.filter(item => item.restaurant_id === parseInt(id));
+        setMenuItems(filtered);
+      }
+    } catch (error) {
+      console.error('Failed to fetch menu items:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeFromCart = (id) => {
-    setCart(cart.filter((item) => item.id !== id));
+  const addToCart = (itemId) => {
+    setCart(prev => ({
+      ...prev,
+      [itemId]: (prev[itemId] || 0) + 1,
+    }));
   };
 
-  const getTotalPrice = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  };
-
-  const getTotalItems = () => {
-    return cart.reduce((sum, item) => sum + item.quantity, 0);
-  };
-
-  const handlePlaceOrder = () => {
-    navigate('/customer/place-order', {
-      state: {
-        cart,
-        restaurant,
-        totalPrice: getTotalPrice(),
-      },
+  const removeFromCart = (itemId) => {
+    setCart(prev => {
+      const newCart = { ...prev };
+      if (newCart[itemId] > 1) {
+        newCart[itemId] -= 1;
+      } else {
+        delete newCart[itemId];
+      }
+      return newCart;
     });
   };
 
+  const getCartTotal = () => {
+    return Object.entries(cart).reduce((total, [itemId, quantity]) => {
+      const item = menuItems.find(m => m.id === parseInt(itemId));
+      return total + (item?.unit_price || 0) * quantity;
+    }, 0);
+  };
+
+  const getCartItemCount = () => {
+    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+  };
+
+  const proceedToCheckout = () => {
+    const cartData = Object.entries(cart).map(([itemId, quantity]) => ({
+      menu_item_id: parseInt(itemId),
+      quantity,
+    }));
+    navigate('/customer/place-order', { state: { restaurant, cart: cartData, menuItems } });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      {/* Header */}
-      <div className="mb-8">
-        <button
-          onClick={() => navigate('/customer/dashboard')}
-          className="flex items-center gap-2 text-[#F20519] hover:text-[#A60311] transition-colors mb-4"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Dashboard
-        </button>
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-[#F20519]">
-            <ImageWithFallback
-              src={restaurant.logo}
-              alt={restaurant.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold text-[#A60311]">{restaurant.name}</h2>
-            <p className="text-gray-600">Browse our menu and add items to cart</p>
-          </div>
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto">
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-6"
+      >
+        <ArrowLeft className="h-5 w-5" />
+        <span>Back</span>
+      </button>
 
-      {/* Menu Items */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-        <div className="flex items-center gap-2 mb-6">
-          <Store className="w-6 h-6 text-[#F20519]" />
-          <h3 className="text-2xl font-bold text-[#A60311]">Menu Items</h3>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {menuItems.map((item) => (
-            <div
-              key={item.id}
-              className="bg-gradient-to-br from-[#F2F2F2] to-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
-            >
-              <div className="relative h-48">
-                <ImageWithFallback
-                  src={item.image}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="p-5">
-                <h4 className="text-xl font-bold text-[#A60311] mb-2">{item.name}</h4>
-                <p className="text-sm text-gray-600 mb-3">{item.description}</p>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="bg-gradient-to-r from-[#F20519] to-[#F20530] text-white px-4 py-2 rounded-xl">
-                    <p className="text-lg font-bold">KSh {item.price.toLocaleString()}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => addToCart(item)}
-                  className="w-full bg-gradient-to-r from-[#F20519] to-[#F20530] text-white py-3 rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all duration-300 flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Add to Cart
-                </button>
-              </div>
+      {restaurant && (
+        <div className="card mb-8">
+          <div className="flex items-center space-x-6">
+            <div className="w-24 h-24 bg-gradient-to-br from-primary-200 to-accent-200 rounded-lg flex items-center justify-center">
+              {restaurant.logo ? (
+                <img src={restaurant.logo} alt={restaurant.name} className="w-full h-full object-cover rounded-lg" />
+              ) : (
+                <span className="text-3xl">🍽️</span>
+              )}
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Cart Button */}
-      {cart.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <button
-            onClick={() => setShowCart(!showCart)}
-            className="bg-gradient-to-r from-[#F20519] to-[#F20530] text-white px-6 py-4 rounded-full shadow-2xl hover:from-[#A60311] hover:to-[#F20519] transition-all duration-300 flex items-center gap-3"
-          >
-            <ShoppingCart className="w-6 h-6" />
-            <span className="font-bold">{getTotalItems()} Items</span>
-            <span className="bg-white/20 px-3 py-1 rounded-full">
-              KSh {getTotalPrice().toLocaleString()}
-            </span>
-          </button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{restaurant.name}</h1>
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <div className="flex items-center space-x-1">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span>{restaurant.rating?.toFixed(1) || '4.5'}</span>
+                </div>
+                <span>{restaurant.address}</span>
+              </div>
+              {restaurant.bio && <p className="text-gray-600 mt-2">{restaurant.bio}</p>}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Cart Modal */}
-      {showCart && cart.length > 0 && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            {/* Cart Header */}
-            <div className="bg-gradient-to-r from-[#F20519] to-[#F20530] text-white p-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ShoppingCart className="w-6 h-6" />
-                <h3 className="text-2xl font-bold">Your Cart</h3>
-              </div>
-              <button
-                onClick={() => setShowCart(false)}
-                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Menu Items */}
+        <div className="lg:col-span-2">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Menu</h2>
+          {menuItems.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No menu items available</p>
             </div>
-
-            {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {cart.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-4 mb-4 pb-4 border-b last:border-b-0"
-                >
-                  <ImageWithFallback
-                    src={item.image}
-                    alt={item.name}
-                    className="w-20 h-20 rounded-xl object-cover"
-                  />
+          ) : (
+            <div className="space-y-4">
+              {menuItems.map((item) => (
+                <div key={item.id} className="card flex items-center justify-between">
                   <div className="flex-1">
-                    <h4 className="font-bold text-[#A60311]">{item.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      KSh {item.price.toLocaleString()} each
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                        onClick={() => updateQuantity(item.id, -1)}
-                        className="bg-gray-200 hover:bg-gray-300 p-1 rounded-lg transition-colors"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="font-bold px-3">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, 1)}
-                        className="bg-[#F20519] hover:bg-[#A60311] text-white p-1 rounded-lg transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1">{item.name}</h3>
+                    <p className="text-gray-600 mb-2">${item.unit_price?.toFixed(2) || '0.00'}</p>
+                    {!item.availability && (
+                      <span className="inline-block px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
+                        Unavailable
+                      </span>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-[#A60311]">
-                      KSh {(item.price * item.quantity).toLocaleString()}
-                    </p>
-                    <button
-                      onClick={() => removeFromCart(item.id)}
-                      className="text-red-500 hover:text-red-700 mt-2"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                  <div className="flex items-center space-x-3">
+                    {cart[item.id] ? (
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="font-semibold w-8 text-center">{cart[item.id]}</span>
+                        <button
+                          onClick={() => addToCart(item.id)}
+                          disabled={!item.availability}
+                          className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => addToCart(item.id)}
+                        disabled={!item.availability}
+                        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Add
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
+          )}
+        </div>
 
-            {/* Cart Footer */}
-            <div className="bg-gray-50 p-6 border-t">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-lg font-bold text-[#A60311]">Total:</span>
-                <span className="text-2xl font-bold text-[#F20519]">
-                  KSh {getTotalPrice().toLocaleString()}
+        {/* Cart Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="card sticky top-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
+              <ShoppingCart className="h-6 w-6" />
+              <span>Cart</span>
+              {getCartItemCount() > 0 && (
+                <span className="bg-primary-500 text-white text-sm px-2 py-1 rounded-full">
+                  {getCartItemCount()}
                 </span>
-              </div>
-              <button
-                onClick={handlePlaceOrder}
-                className="w-full bg-gradient-to-r from-[#F20519] to-[#F20530] text-white py-4 rounded-xl hover:from-[#A60311] hover:to-[#F20519] transition-all duration-300 flex items-center justify-center gap-2 font-bold"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                Place Order
-              </button>
-            </div>
+              )}
+            </h2>
+            {Object.keys(cart).length === 0 ? (
+              <p className="text-gray-500 text-center py-8">Your cart is empty</p>
+            ) : (
+              <>
+                <div className="space-y-4 mb-6">
+                  {Object.entries(cart).map(([itemId, quantity]) => {
+                    const item = menuItems.find(m => m.id === parseInt(itemId));
+                    if (!item) return null;
+                    return (
+                      <div key={itemId} className="flex items-center justify-between border-b pb-3">
+                        <div>
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-sm text-gray-600">${item.unit_price?.toFixed(2)} x {quantity}</p>
+                        </div>
+                        <p className="font-semibold">${(item.unit_price * quantity).toFixed(2)}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="border-t pt-4 mb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-lg font-semibold">Total:</span>
+                    <span className="text-2xl font-bold text-primary-600">${getCartTotal().toFixed(2)}</span>
+                  </div>
+                  <button onClick={proceedToCheckout} className="w-full btn-primary">
+                    Proceed to Checkout
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
+
+export default RestaurantMenuPage;
+

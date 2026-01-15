@@ -1,144 +1,115 @@
-import { Star, MessageSquare, Award, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Star, MessageSquare, User } from 'lucide-react';
 
-export function RestaurantReviewsPage() {
-  const reviews = [
-    {
-      id: 1,
-      customer: 'Sarah Johnson',
-      rating: 5,
-      comment:
-        'Amazing pizza! The delivery was fast and the food was still hot. Highly recommend the Margherita!',
-      date: '2026-01-14',
-    },
-    {
-      id: 2,
-      customer: 'Michael Chen',
-      rating: 4,
-      comment:
-        'Great taste and good portion sizes. The BBQ Chicken pizza was delicious.',
-      date: '2026-01-13',
-    },
-    {
-      id: 3,
-      customer: 'Emily Williams',
-      rating: 5,
-      comment: 'Best pizza in town! Fresh ingredients and excellent service.',
-      date: '2026-01-13',
-    },
-    {
-      id: 4,
-      customer: 'James Brown',
-      rating: 4,
-      comment: 'Very good pizza, though I wish they had more vegan options.',
-      date: '2026-01-12',
-    },
-    {
-      id: 5,
-      customer: 'Lisa Anderson',
-      rating: 5,
-      comment: 'Absolutely loved it! The Meat Lovers pizza is a must-try.',
-      date: '2026-01-11',
-    },
-    {
-      id: 6,
-      customer: 'Tom Harris',
-      rating: 3,
-      comment: 'Good pizza but the delivery took longer than expected.',
-      date: '2026-01-10',
-    },
-  ];
+function RestaurantReviewPage() {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Calculate average rating
-  const averageRating = (
-    reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
-  ).toFixed(1);
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  const fetchReviews = async () => {
+    try {
+      // Note: You'll need to create this endpoint
+      const response = await fetch('/api/restaurant/reviews', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }).map((_, i) => (
+      <Star
+        key={i}
+        className={`h-5 w-5 ${
+          i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+        }`}
+      />
+    ));
+  };
+
+  const averageRating = reviews.length > 0
+    ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
+    : '0.0';
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* Header */}
+    <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-[#A60311] mb-2">Customer Reviews</h2>
-        <p className="text-gray-600">
-          See what customers are saying about your restaurant
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Reviews</h1>
+        <p className="text-gray-600">See what customers are saying</p>
       </div>
 
-      {/* Average Rating */}
-      <div className="bg-gradient-to-br from-[#F20519] to-[#F20530] rounded-2xl p-8 text-white shadow-lg mb-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-center md:text-left">
-            <h3 className="text-lg mb-2">Average Rating</h3>
-            <div className="flex items-center gap-3">
-              <span className="text-6xl font-bold">{averageRating}</span>
-              <div>
-                <div className="flex gap-1 mb-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-6 h-6 ${
-                        i < Math.floor(parseFloat(averageRating))
-                          ? 'fill-white text-white'
-                          : 'text-white/40'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-white/90">
-                  Based on {reviews.length} reviews
-                </p>
+      {/* Average Rating Card */}
+      <div className="card mb-8 bg-gradient-to-br from-primary-500 to-primary-600 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-primary-100 text-sm mb-1">Average Rating</p>
+            <div className="flex items-center space-x-2">
+              <p className="text-4xl font-bold">{averageRating}</p>
+              <div className="flex items-center">
+                {renderStars(Math.round(parseFloat(averageRating)))}
               </div>
             </div>
+            <p className="text-primary-100 text-sm mt-2">{reviews.length} total reviews</p>
           </div>
-          <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
-            <Award className="w-16 h-16 text-white" />
-          </div>
+          <MessageSquare className="h-16 w-16 text-primary-200" />
         </div>
       </div>
 
-      {/* All Reviews */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <MessageSquare className="w-6 h-6 text-[#F20519]" />
-          <h3 className="text-2xl font-bold text-[#A60311]">All Reviews</h3>
+      {/* Reviews List */}
+      {reviews.length === 0 ? (
+        <div className="card text-center py-12">
+          <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg">No reviews yet</p>
         </div>
-
-        <div className="space-y-4">
+      ) : (
+        <div className="space-y-6">
           {reviews.map((review) => (
-            <div
-              key={review.id}
-              className="bg-gradient-to-br from-[#F2F2F2] to-white rounded-xl p-6 border-2 border-[#F20519]/20 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h4 className="font-bold text-[#A60311] text-lg">
-                    {review.customer}
-                  </h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < review.rating
-                              ? 'fill-[#F20519] text-[#F20519]'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
+            <div key={review.id} className="card">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary-200 to-accent-200 rounded-full flex items-center justify-center">
+                    <User className="h-6 w-6 text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      {review.customer_name || 'Anonymous'}
+                    </h3>
+                    <div className="flex items-center space-x-2 mt-1">
+                      {renderStars(review.rating)}
+                      <span className="text-sm text-gray-600">({review.rating}/5)</span>
                     </div>
-                    <span className="text-sm text-gray-500">({review.rating}/5)</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Calendar className="w-4 h-4" />
-                  {review.date}
-                </div>
+                <span className="text-sm text-gray-500">
+                  {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'N/A'}
+                </span>
               </div>
-              <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+              <p className="text-gray-700">{review.comment}</p>
             </div>
           ))}
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 }
+
+export default RestaurantReviewPage;
+

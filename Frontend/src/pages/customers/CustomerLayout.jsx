@@ -1,148 +1,158 @@
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  DollarSign,
-  MessageSquare,
-  Menu,
-  X,
-  User,
-} from 'lucide-react';
-import { WhatsAppButton } from '../../components/WhatsappButton';
+import { Home, ShoppingBag, CreditCard, Star, LogOut, UtensilsCrossed, Menu, X, ChevronDown, User } from 'lucide-react';
 
-export function CustomerLayout({ children }) {
-  const navigate = useNavigate();
+// Currency formatter for KSh
+export const formatCurrency = (amount) => {
+  return `KSh ${Number(amount).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+function CustomerLayout({ user, onLogout }) {
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/customer/dashboard' },
-    { id: 'orders', label: 'Orders', icon: ShoppingCart, path: '/customer/orders' },
-    { id: 'payments', label: 'Payments', icon: DollarSign, path: '/customer/payments' },
-    { id: 'reviews', label: 'Reviews', icon: MessageSquare, path: '/customer/reviews' },
+  const navItems = [
+    { path: '/customer/dashboard', icon: Home, label: 'Dashboard' },
+    { path: '/customer/orders', icon: ShoppingBag, label: 'My Orders' },
+    { path: '/customer/payments', icon: CreditCard, label: 'Payments' },
+    { path: '/customer/reviews', icon: Star, label: 'Reviews' },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const closeMenu = () => setMenuOpen(false);
 
-  const customer = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (user?.name) {
+      return user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return 'CU';
   };
 
   return (
-    <div className="min-h-screen bg-[#F2F2F2]">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-gradient-to-br from-[#F20519] to-[#A60311] p-6">
-        {/* Profile */}
-        <div className="flex flex-col items-center mb-10">
-          <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white/20 mb-3 bg-white/10 flex items-center justify-center">
-            <User className="w-12 h-12 text-white" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile Navbar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white shadow-md z-40 flex items-center justify-between px-4">
+        <div className="flex items-center space-x-2">
+          <UtensilsCrossed className="h-7 w-7 text-primary-500" />
+          <span className="text-xl font-bold text-gray-900">QuickBite</span>
+        </div>
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1"
+          >
+            {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            <ChevronDown className={`h-4 w-4 transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {/* Dropdown Menu */}
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
+              <nav className="py-2">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={closeMenu}
+                      className={`flex items-center space-x-3 px-4 py-3 transition-all duration-200 ${
+                        isActive
+                          ? 'bg-primary-500 text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="font-medium">{item.label}</span>
+                    </Link>
+                  );
+                })}
+                <button
+                  onClick={() => {
+                    onLogout();
+                    closeMenu();
+                  }}
+                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span className="font-medium">Logout</span>
+                </button>
+              </nav>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sidebar - Desktop */}
+      <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-40">
+        {/* Logo Section */}
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-primary-500 rounded-lg">
+              <UtensilsCrossed className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-xl font-bold text-gray-900">QuickBite</span>
           </div>
-          <h1 className="text-xl font-bold text-white text-center">
-            {customer.name}
-          </h1>
-          <span className="text-xs bg-white/20 text-white px-3 py-1 rounded-full mt-2">
-            Customer
-          </span>
         </div>
 
-        {/* Menu */}
-        <nav className="flex-1 space-y-2">
-          {menuItems.map((item) => {
+        {/* User Profile Section */}
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+            <div className="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center">
+              <span className="text-white font-semibold text-sm">{getUserInitials()}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">{user?.name || 'Customer'}</p>
+              <p className="text-xs text-gray-500 capitalize">{user?.user_type || 'Customer'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {navItems.map((item) => {
             const Icon = item.icon;
+            const isActive = location.pathname === item.path;
             return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                  isActive(item.path)
-                    ? 'bg-white text-[#F20519] shadow-lg'
-                    : 'text-white hover:bg-white/10'
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-primary-500 text-white shadow-md'
+                    : 'text-gray-700 hover:bg-gray-100 hover:translate-x-1'
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </button>
+                <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-primary-500'} transition-colors`} />
+                <span className="font-medium">{item.label}</span>
+                {isActive && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white shadow-sm" />
+                )}
+              </Link>
             );
           })}
         </nav>
 
-        {/* Logout */}
-        <button
-          onClick={() => navigate('/login')}
-          className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors text-white"
-        >
-          Logout
-        </button>
+        {/* Logout Section */}
+        <div className="p-4 border-t border-gray-100">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all duration-200 group"
+          >
+            <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+            <span className="font-medium">Logout</span>
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64">
-        {/* Mobile Header */}
-        <header className="lg:hidden bg-white shadow-sm sticky top-0 z-40">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-2">
-              <User className="w-6 h-6 text-[#F20519]" />
-              <h1 className="text-xl font-bold text-[#A60311]">
-                {customer.name}
-              </h1>
-            </div>
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6 text-[#F20519]" />
-              ) : (
-                <Menu className="w-6 h-6 text-[#F20519]" />
-              )}
-            </button>
-          </div>
-
-          {/* Mobile Menu */}
-          {isMobileMenuOpen && (
-            <nav className="border-t bg-gradient-to-br from-[#F20519] to-[#A60311] p-4 space-y-2">
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      navigate(item.path);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                      isActive(item.path)
-                        ? 'bg-white text-[#F20519]'
-                        : 'text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => navigate('/login')}
-                className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors text-white"
-              >
-                Logout
-              </button>
-            </nav>
-          )}
-        </header>
-
-        {/* Page Content */}
-        <main className="p-4 lg:p-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </main>
-      </div>
-
-      {/* WhatsApp */}
-      <WhatsAppButton />
+      <main className="lg:ml-64 p-4 sm:p-8 pt-20 lg:pt-8 min-h-screen">
+        <Outlet />
+      </main>
     </div>
   );
 }
+
+export default CustomerLayout;
+

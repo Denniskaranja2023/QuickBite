@@ -1,120 +1,119 @@
-import { CreditCard, CheckCircle } from 'lucide-react';
-import { ImageWithFallback } from '../../components/ImageWithFallback';
+import { useState, useEffect } from 'react';
+import { CreditCard, DollarSign, TrendingUp } from 'lucide-react';
 
-export function RestaurantPaymentsPage() {
-  const payments = [
-    {
-      id: 1,
-      payer: 'Sarah Johnson',
-      payerImage: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400',
-      amount: 2500,
-      date: '2026-01-14',
-      method: 'M-Pesa',
-      status: 'Completed',
-    },
-    {
-      id: 2,
-      payer: 'Michael Chen',
-      payerImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-      amount: 1800,
-      date: '2026-01-13',
-      method: 'Card',
-      status: 'Completed',
-    },
-    {
-      id: 3,
-      payer: 'Emily Williams',
-      payerImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-      amount: 3200,
-      date: '2026-01-13',
-      method: 'M-Pesa',
-      status: 'Completed',
-    },
-    {
-      id: 4,
-      payer: 'James Brown',
-      payerImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400',
-      amount: 1500,
-      date: '2026-01-12',
-      method: 'Cash',
-      status: 'Completed',
-    },
-    {
-      id: 5,
-      payer: 'Lisa Anderson',
-      payerImage: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400',
-      amount: 2100,
-      date: '2026-01-12',
-      method: 'M-Pesa',
-      status: 'Completed',
-    },
-  ];
+function RestaurantPaymentsPage() {
+  const [payments, setPayments] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    thisMonth: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  const fetchPayments = async () => {
+    try {
+      const response = await fetch('/api/restaurant/payments', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPayments(data);
+        const total = data.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const thisMonth = data
+          .filter(p => {
+            const paymentDate = new Date(p.created_at);
+            const now = new Date();
+            return paymentDate.getMonth() === now.getMonth() && paymentDate.getFullYear() === now.getFullYear();
+          })
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
+        setStats({ total, thisMonth });
+      }
+    } catch (error) {
+      console.error('Failed to fetch payments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <>
+    <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-[#A60311] mb-2">Payment History</h2>
-        <p className="text-gray-600">View all transactions and payments</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Payments</h1>
+        <p className="text-gray-600">View payment history</p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <CreditCard className="w-6 h-6 text-[#F20519]" />
-          <h3 className="text-2xl font-bold text-[#A60311]">Transaction History</h3>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm mb-1">Total Revenue</p>
+              <p className="text-3xl font-bold">${stats.total.toFixed(2)}</p>
+            </div>
+            <DollarSign className="h-12 w-12 text-green-200" />
+          </div>
         </div>
+        <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm mb-1">This Month</p>
+              <p className="text-3xl font-bold">${stats.thisMonth.toFixed(2)}</p>
+            </div>
+            <TrendingUp className="h-12 w-12 text-blue-200" />
+          </div>
+        </div>
+      </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-[#F20519] to-[#F20530] text-white">
-              <tr>
-                <th className="px-4 py-3 text-left rounded-tl-xl">Payer</th>
-                <th className="px-4 py-3 text-left">Amount</th>
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Method</th>
-                <th className="px-4 py-3 text-left rounded-tr-xl">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((payment, index) => (
-                <tr
-                  key={payment.id}
-                  className={`border-b ${
-                    index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                  } hover:bg-[#F20519]/5 transition-colors`}
-                >
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#D9895B]">
-                        <ImageWithFallback
-                          src={payment.payerImage}
-                          alt={payment.payer}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <span className="font-semibold text-gray-800">{payment.payer}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 font-bold text-[#A60311]">
-                    KSh {payment.amount.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-4 text-gray-600">{payment.date}</td>
-                  <td className="px-4 py-4">
-                    <span className="bg-[#D9895B]/20 text-[#D9895B] px-3 py-1 rounded-full text-sm font-semibold">
-                      {payment.method}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1 w-fit">
-                      <CheckCircle className="w-4 h-4" />
-                      {payment.status}
-                    </span>
-                  </td>
+      {/* Payments List */}
+      <div className="card">
+        {payments.length === 0 ? (
+          <div className="text-center py-12">
+            <CreditCard className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No payments found</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">ID</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Amount</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Method</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Order ID</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="border-b hover:bg-gray-50">
+                    <td className="py-4 px-4">#{payment.id}</td>
+                    <td className="py-4 px-4 font-semibold">${payment.amount?.toFixed(2) || '0.00'}</td>
+                    <td className="py-4 px-4 capitalize">{payment.method || 'N/A'}</td>
+                    <td className="py-4 px-4">#{payment.order_id || 'N/A'}</td>
+                    <td className="py-4 px-4">
+                      {payment.created_at ? new Date(payment.created_at).toLocaleDateString() : 'N/A'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }
+
+export default RestaurantPaymentsPage;
+
