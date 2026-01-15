@@ -96,7 +96,7 @@ def seed_data():
                 name=name,
                 address=random.choice(kenyan_addresses),
                 contact=fake.phone_number(),
-                email=f"{name.lower().replace(' ', '').replace("'", '')}@restaurant.com",
+                email=f"{name.lower().replace(' ', '').replace(chr(39), '')}@restaurant.com",
                 bio=fake.text(max_nb_chars=200),
                 logo=random.choice(logos),
                 paybill_number=fake.random_int(min=100000, max=999999),
@@ -138,6 +138,50 @@ def seed_data():
             db.session.add(agent)
         
         db.session.commit()
+        
+        # Menu item descriptions
+        food_descriptions = {
+            "Grilled Chicken": "Tender chicken breast marinated in herbs and spices, perfectly grilled to golden perfection. Served with your choice of sides.",
+            "Beef Steak": "Premium quality beef steak, cooked to your preference. Juicy, tender, and full of flavor. Served with vegetables and your choice of sauce.",
+            "Fish Fillet": "Fresh fish fillet, lightly seasoned and pan-fried until crispy on the outside and tender on the inside. Served with lemon and tartar sauce.",
+            "Vegetable Curry": "A flavorful mix of fresh seasonal vegetables cooked in a rich, aromatic curry sauce. Perfectly spiced and served with rice or naan.",
+            "Pasta Carbonara": "Classic Italian pasta with creamy sauce, crispy bacon, and parmesan cheese. Rich, comforting, and absolutely delicious.",
+            "Pizza Margherita": "Traditional Italian pizza with fresh tomato sauce, mozzarella cheese, and basil. Simple, classic, and always satisfying.",
+            "Caesar Salad": "Crisp romaine lettuce tossed in creamy Caesar dressing, topped with parmesan cheese and croutons. Fresh and flavorful.",
+            "Chicken Wings": "Crispy, golden chicken wings tossed in your choice of sauce. Spicy, tangy, and finger-licking good.",
+            "Lamb Chops": "Tender lamb chops seasoned with herbs and grilled to perfection. Juicy, flavorful, and served with mint sauce.",
+            "Seafood Platter": "A generous assortment of fresh seafood including fish, prawns, and calamari. Grilled and seasoned to perfection.",
+            "Burger Deluxe": "Juicy beef patty with fresh lettuce, tomato, onion, pickles, and special sauce on a toasted bun. A classic favorite.",
+            "Fried Rice": "Fragrant rice stir-fried with vegetables, eggs, and your choice of protein. Flavorful and satisfying.",
+            "Noodle Soup": "Warm, comforting noodle soup with vegetables and your choice of protein. Perfect for any time of day.",
+            "Tacos": "Soft or crispy tortillas filled with seasoned meat, fresh vegetables, cheese, and salsa. Authentic Mexican flavors.",
+            "Quesadilla": "Warm tortilla filled with melted cheese and your choice of fillings. Crispy on the outside, gooey on the inside.",
+            "Sushi Roll": "Fresh sushi rolls with premium fish, vegetables, and rice. Artfully prepared and beautifully presented.",
+            "Pad Thai": "Classic Thai stir-fried noodles with tamarind sauce, vegetables, peanuts, and your choice of protein. Sweet, sour, and savory.",
+            "Biryani": "Fragrant basmati rice cooked with aromatic spices and tender meat. A flavorful and aromatic dish that's a feast for the senses.",
+            "Samosa": "Crispy pastry filled with spiced potatoes and peas. Golden, flaky, and perfectly seasoned. Served with chutney.",
+            "Spring Rolls": "Crispy vegetable spring rolls with a savory filling. Light, crunchy, and served with sweet and sour sauce.",
+            "Chocolate Cake": "Rich, moist chocolate cake with creamy frosting. Decadent and irresistible. Perfect for satisfying your sweet tooth.",
+            "Ice Cream": "Creamy, smooth ice cream in various flavors. Cool, refreshing, and the perfect dessert for any occasion.",
+            "Fruit Salad": "Fresh seasonal fruits mixed together. Light, refreshing, and naturally sweet. A healthy and delicious choice.",
+            "Cheesecake": "Creamy, rich cheesecake with a buttery graham cracker crust. Smooth, decadent, and absolutely delightful.",
+            "Tiramisu": "Classic Italian dessert with layers of coffee-soaked ladyfingers and mascarpone cream. Rich, creamy, and elegant.",
+            "Coffee": "Freshly brewed coffee, hot and aromatic. Available in various styles. The perfect pick-me-up to start your day.",
+            "Fresh Juice": "Freshly squeezed juice from seasonal fruits. Natural, refreshing, and packed with vitamins. Available in various flavors.",
+            "Smoothie": "Blended fresh fruits with yogurt or milk. Thick, creamy, and nutritious. A delicious and healthy beverage option.",
+            "Tea": "Hot, aromatic tea served with your choice of milk and sugar. Soothing and comforting. Available in various flavors.",
+            "Soda": "Refreshing carbonated soft drinks. Cold, fizzy, and available in various flavors. Perfect for quenching your thirst.",
+            "Garlic Bread": "Crispy bread brushed with garlic butter and herbs. Warm, fragrant, and the perfect accompaniment to any meal.",
+            "Onion Rings": "Golden, crispy onion rings with a light batter. Crunchy on the outside, tender on the inside. Addictively delicious.",
+            "French Fries": "Crispy, golden french fries, perfectly seasoned and cooked to perfection. Hot, salty, and absolutely irresistible.",
+            "Mozzarella Sticks": "Breaded mozzarella cheese sticks, fried until golden and crispy. Melted cheese center with a crunchy exterior.",
+            "Chicken Nuggets": "Tender pieces of chicken, breaded and fried until golden. Crispy on the outside, juicy on the inside. Served with dipping sauce.",
+            "Pancakes": "Fluffy, golden pancakes served with butter and syrup. Light, sweet, and perfect for breakfast or brunch.",
+            "Waffles": "Crispy, golden waffles with a light, fluffy texture. Served with butter, syrup, and fresh fruit. A breakfast favorite.",
+            "Omelette": "Fluffy eggs filled with your choice of vegetables, cheese, and meat. Customizable and always satisfying.",
+            "Sandwich": "Fresh bread filled with your choice of ingredients. Customizable, convenient, and always delicious. Perfect for a quick meal.",
+            "Wrap": "Soft tortilla wrapped around your choice of fresh fillings. Portable, flavorful, and perfect for on-the-go dining."
+        }
         
         # Menu items with images
         food_data = [
@@ -190,6 +234,7 @@ def seed_data():
                 name=name,
                 unit_price=round(random.uniform(300.0, 1500.0), 2),
                 image=image,
+                description=food_descriptions.get(name, "Delicious food item prepared with fresh ingredients."),
                 restaurant=random.choice(restaurants),
                 availability=random.choice([True, True, True, False])  # 75% available
             )
