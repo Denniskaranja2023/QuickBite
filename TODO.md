@@ -44,6 +44,35 @@
 - Updated UI to display new response format with type badges
 - **Status**: Completed
 
+### 3. AgentDashboard Order Cards & Delivered Orders Table ✅
+
+#### ✅ 3.1 Backend Changes
+- Added new endpoint `/api/agent/pending-orders` 
+- Returns orders assigned to agent that have NOT been delivered (delivery_time is null)
+- Includes customer details, menu items, and restaurant info
+- Updated `/api/agent/delivered-orders` to include customer and menu item details
+
+#### ✅ 3.2 Frontend Changes (AgentDashboard.jsx)
+- **Pending Order Cards**: 
+  - Customer image, name, and contact
+  - Restaurant name
+  - Delivery address with map pin icon
+  - Menu items ordered with images
+  - Total price (KSh)
+  - "Mark as Delivered" button with loading state
+
+- **Delivered Orders Table**:
+  - Customer Name
+  - Time of Delivery
+  - Payment Expected (total_price)
+  - Items Ordered (with overflow handling)
+
+- **Functionality**:
+  - Fetches pending and delivered orders on mount
+  - "Mark as Delivered" calls PATCH `/api/agent/orders/<id>`
+  - Order moves from cards to delivered table
+  - Stats update automatically
+
 ---
 
 ## Summary
@@ -54,11 +83,13 @@ All pending tasks have been completed:
    - Added Signup endpoint for customer and restaurant registration
    - Added Agent by ID endpoint for review pages
    - Added combined reviews endpoint that includes both restaurant and agent reviews
+   - Added `/api/agent/pending-orders` endpoint for pending deliveries
 
 2. **Frontend:**
    - Fixed AgentDashboard to fetch real data from API
    - Fixed all currency displays to use KSh (Kenyan Shilling)
    - Updated CustomerReviewsPage to work with new API
+   - Redesigned AgentDashboard with order cards and delivered orders table
 
 3. **Testing:**
    - The server can be started with `cd Server && python app.py`

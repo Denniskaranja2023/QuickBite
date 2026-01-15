@@ -1396,6 +1396,69 @@ class DeliveryAgentOrders(Resource):
         } for o in orders], 200)
 
 
+class DeliveryAgentPendingOrders(Resource):
+    def get(self):
+        if session.get('user_type') != 'agent':
+            return make_response({'error': 'Unauthorized'}, 403)
+        
+        agent_id = session.get('user_id')
+        # Get orders where delivery_time is None (pending deliveries)
+        orders = Order.query.filter(
+            Order.delivery_agent_id == agent_id,
+            Order.delivery_time.is_(None)
+        ).all()
+        
+        result = []
+        for o in orders:
+            # Get customer details
+            customer = o.customer
+            customer_data = None
+            if customer:
+                customer_data = {
+                    'id': customer.id,
+                    'name': customer.name,
+                    'image': customer.image,
+                    'contact': customer.contact
+                }
+            
+            # Get restaurant details
+            restaurant = o.restaurant
+            restaurant_data = None
+            if restaurant:
+                restaurant_data = {
+                    'id': restaurant.id,
+                    'name': restaurant.name,
+                    'logo': restaurant.logo
+                }
+            
+            # Build menu items list
+            menu_items = []
+            for item in o.menu_items:
+                menu_items.append({
+                    'id': item.id,
+                    'name': item.name,
+                    'unit_price': item.unit_price,
+                    'image': item.image
+                })
+            
+            result.append({
+                'id': o.id,
+                'created_at': o.created_at.isoformat() if o.created_at else None,
+                'delivery_time': None,
+                'delivery_address': o.delivery_address,
+                'payment_status': o.payment_status,
+                'total_price': o.total_price,
+                'restaurant_id': o.restaurant_id,
+                'delivery_agent_id': o.delivery_agent_id,
+                'customer_id': o.customer_id,
+                'customer': customer_data,
+                'restaurant': restaurant_data,
+                'menu_items': menu_items
+            })
+        
+        return make_response(result, 200)
+
+
 class DeliveryAgentDeliveredOrders(Resource):
     def get(self):
         if session.get('user_type') != 'agent':
@@ -1408,17 +1471,44 @@ class DeliveryAgentDeliveredOrders(Resource):
             Order.delivery_time.isnot(None)
         ).all()
         
-        return make_response([{
-            'id': o.id,
-            'created_at': o.created_at.isoformat() if o.created_at else None,
-            'delivery_time': o.delivery_time.isoformat() if o.delivery_time else None,
-            'delivery_address': o.delivery_address,
-            'payment_status': o.payment_status,
-            'total_price': o.total_price,
-            'restaurant_id': o.restaurant_id,
-            'delivery_agent_id': o.delivery_agent_id,
-            'customer_id': o.customer_id
-        } for o in orders], 200)
+        result = []
+        for o in orders:
+            # Get customer details
+            customer = o.customer
+            customer_data = None
+            if customer:
+                customer_data = {
+                    'id': customer.id,
+                    'name': customer.name,
+                    'image': customer.image,
+                    'contact': customer.contact
+                }
+            
+            # Build menu items list
+            menu_items = []
+            for item in o.menu_items:
+                menu_items.append({
+                    'id': item.id,
+                    'name': item.name,
+                    'unit_price': item.unit_price,
+                    'image': item.image
+                })
+            
+            result.append({
+                'id': o.id,
+                'created_at': o.created_at.isoformat() if o.created_at else None,
+                'delivery_time': o.delivery_time.isoformat() if o.delivery_time else None,
+                'delivery_address': o.delivery_address,
+                'payment_status': o.payment_status,
+                'total_price': o.total_price,
+                'restaurant_id': o.restaurant_id,
+                'delivery_agent_id': o.delivery_agent_id,
+                'customer_id': o.customer_id,
+                'customer': customer_data,
+                'menu_items': menu_items
+            })
+        
+        return make_response(result, 200)
 
 
 class DeliveryAgentReviews(Resource):
@@ -1495,6 +1585,7 @@ class DeliveryAgentById(Resource):
 
 api.add_resource(DeliveryAgentAccount, '/api/agent/account')
 api.add_resource(DeliveryAgentOrders, '/api/agent/orders')
+api.add_resource(DeliveryAgentPendingOrders, '/api/agent/pending-orders')
 api.add_resource(DeliveryAgentDeliveredOrders, '/api/agent/delivered-orders')
 api.add_resource(DeliveryAgentReviews, '/api/agent/reviews')
 api.add_resource(DeliveryAgentOrderById, '/api/agent/orders/<int:id>')
