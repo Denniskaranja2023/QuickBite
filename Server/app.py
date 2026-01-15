@@ -247,15 +247,22 @@ class AdminPayments(Resource):
             return make_response({'error': 'Unauthorized'}, 403)
         
         payments = Payment.query.all()
-        return make_response([{
-            'id': p.id,
-            'amount': p.amount,
-            'method': p.method,
-            'created_at': p.created_at.isoformat(),
-            'order_id': p.order_id,
-            'customer_id': p.customer_id,
-            'restaurant_id': p.restaurant_id
-        } for p in payments], 200)
+        result = []
+        for p in payments:
+            customer = Customer.query.get(p.customer_id)
+            restaurant = Restaurant.query.get(p.restaurant_id)
+            result.append({
+                'id': p.id,
+                'amount': p.amount,
+                'method': p.method,
+                'created_at': p.created_at.isoformat(),
+                'order_id': p.order_id,
+                'customer_id': p.customer_id,
+                'customer_name': customer.name if customer else 'Unknown Customer',
+                'restaurant_id': p.restaurant_id,
+                'restaurant_name': restaurant.name if restaurant else 'Unknown Restaurant'
+            })
+        return make_response(result, 200)
 
 class AdminPaymentById(Resource):
     def delete(self, id):
@@ -299,12 +306,84 @@ class AdminCustomerById(Resource):
         
         return make_response({'message': 'Customer deleted'}, 200)
 
+class AdminTopRestaurants(Resource):
+    def get(self):
+        if session.get('user_type') != 'admin':
+            return make_response({'error': 'Unauthorized'}, 403)
+        
+        # Get top 5 restaurants by order count
+        top_restaurants = db.session.query(
+            Restaurant,
+            db.func.count(Order.id).label('order_count')
+        ).outerjoin(Order).group_by(
+            Restaurant.id
+        ).order_by(
+            db.func.count(Order.id).desc()
+        ).limit(5).all()
+        
+        result = []
+        for restaurant, order_count in top_restaurants:
+            # Calculate total revenue for this restaurant
+            total_revenue = db.session.query(
+                db.func.sum(Payment.amount)
+            ).filter_by(restaurant_id=restaurant.id).scalar() or 0
+            
+            result.append({
+                'id': restaurant.id,
+                'name': restaurant.name,
+                'email': restaurant.email,
+                'address': restaurant.address,
+                'contact': restaurant.contact,
+                'rating': restaurant.rating,
+                'logo': restaurant.logo,
+                'order_count': order_count,
+                'total_revenue': total_revenue
+            })
+        
+        return make_response(result, 200)
+
+class AdminTopCustomers(Resource):
+    def get(self):
+        if session.get('user_type') != 'admin':
+            return make_response({'error': 'Unauthorized'}, 403)
+        
+        # Get top 5 customers by order count
+        top_customers = db.session.query(
+            Customer,
+            db.func.count(Order.id).label('order_count')
+        ).outerjoin(Order).group_by(
+            Customer.id
+        ).order_by(
+            db.func.count(Order.id).desc()
+        ).limit(5).all()
+        
+        result = []
+        for customer, order_count in top_customers:
+            # Calculate total spent by this customer
+            total_spent = db.session.query(
+                db.func.sum(Payment.amount)
+            ).filter_by(customer_id=customer.id).scalar() or 0
+            
+            result.append({
+                'id': customer.id,
+                'name': customer.name,
+                'email': customer.email,
+                'contact': customer.contact,
+                'image': customer.image,
+                'order_count': order_count,
+                'total_spent': total_spent
+            })
+        
+        return make_response(result, 200)
+
 api.add_resource(AdminRestaurants, '/api/admin/restaurants')
 api.add_resource(AdminRestaurantById, '/api/admin/restaurants/<int:id>')
 api.add_resource(AdminPayments, '/api/admin/payments')
 api.add_resource(AdminPaymentById, '/api/admin/payments/<int:id>')
 api.add_resource(AdminCustomers, '/api/admin/customers')
 api.add_resource(AdminCustomerById, '/api/admin/customers/<int:id>')
+api.add_resource(AdminTopRestaurants, '/api/admin/top-restaurants')
+api.add_resource(AdminTopCustomers, '/api/admin/top-customers')
 
 #3. Restaurant routes
 class RestaurantAccount(Resource):

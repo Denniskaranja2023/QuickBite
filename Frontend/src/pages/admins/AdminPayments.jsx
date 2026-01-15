@@ -38,6 +38,15 @@ function AdminPayments() {
     }
   };
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -59,7 +68,7 @@ function AdminPayments() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm mb-1">Total Revenue</p>
-              <p className="text-3xl font-bold">KSh {stats.total.toFixed(2)}</p>
+              <p className="text-3xl font-bold">{formatCurrency(stats.total)}</p>
             </div>
             <DollarSign className="h-12 w-12 text-green-200" />
           </div>
@@ -68,7 +77,7 @@ function AdminPayments() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm mb-1">This Month</p>
-              <p className="text-3xl font-bold">KSh {stats.thisMonth.toFixed(2)}</p>
+              <p className="text-3xl font-bold">{formatCurrency(stats.thisMonth)}</p>
             </div>
             <TrendingUp className="h-12 w-12 text-blue-200" />
           </div>
@@ -91,8 +100,8 @@ function AdminPayments() {
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Amount</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Method</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Order ID</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Customer ID</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Restaurant ID</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Customer</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Restaurant</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
                 </tr>
               </thead>
@@ -100,11 +109,11 @@ function AdminPayments() {
                 {payments.map((payment) => (
                   <tr key={payment.id} className="border-b hover:bg-gray-50">
                     <td className="py-4 px-4">#{payment.id}</td>
-                    <td className="py-4 px-4 font-semibold">${payment.amount?.toFixed(2) || '0.00'}</td>
+                    <td className="py-4 px-4 font-semibold">{formatCurrency(payment.amount || 0)}</td>
                     <td className="py-4 px-4 capitalize">{payment.method || 'N/A'}</td>
                     <td className="py-4 px-4">#{payment.order_id || 'N/A'}</td>
-                    <td className="py-4 px-4">#{payment.customer_id || 'N/A'}</td>
-                    <td className="py-4 px-4">#{payment.restaurant_id || 'N/A'}</td>
+                    <td className="py-4 px-4">{payment.customer_name || 'Unknown'}</td>
+                    <td className="py-4 px-4">{payment.restaurant_name || 'Unknown'}</td>
                     <td className="py-4 px-4">
                       {payment.created_at ? new Date(payment.created_at).toLocaleDateString() : 'N/A'}
                     </td>
