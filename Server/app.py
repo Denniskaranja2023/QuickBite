@@ -19,7 +19,7 @@ load_dotenv()
 #creates a Flask APP Instance
 app= Flask(__name__)
 #Enables communication with the frontend
-CORS(app, supports_credentials=True, origins=['http://localhost:5173', 'http://127.0.0.1:5173'])
+CORS(app, supports_credentials=True, origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'https://quick-bite-theta-sable.vercel.app'])
 #For the creation of databases
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

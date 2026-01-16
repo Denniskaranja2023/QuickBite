@@ -1,0 +1,31 @@
+# QuickBite Server Dependencies
+# Flask Framework
+Flask==3.0.0
+Flask-Bcrypt==1.0.1
+Flask-CORS==4.0.0
+Flask-RESTful==0.3.10
+Flask-Migrate==4.0.5
+Flask-SQLAlchemy==3.1.1
+
+# Database and Serialization
+SQLAlchemy==2.0.23
+SQLAlchemy-Serializer==0.3.0
+Alembic==1.13.0
+
+# Configuration and Utilities
+python-dotenv==1.0.0
+pytz==2023.3
+requests==2.31.0
+Faker==19.13.0
+Werkzeug==3.0.1
+
+# Production server
+gunicorn==21.2.0
+
+# Database drivers
+psycopg2-binary==2.9.9
+
+# M-Pesa integration
+cachecontrol==0.13.1
+urllib3==2.1.0
+

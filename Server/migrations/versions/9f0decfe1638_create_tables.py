@@ -1,8 +1,8 @@
-"""Initial migration
+"""create tables
 
-Revision ID: ad1b34205581
+Revision ID: 9f0decfe1638
 Revises: 
-Create Date: 2026-01-14 12:49:56.361996
+Create Date: 2026-01-16 15:07:33.003785
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ad1b34205581'
+revision = '9f0decfe1638'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -70,6 +70,7 @@ def upgrade():
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('unit_price', sa.Float(), nullable=False),
     sa.Column('image', sa.String(), nullable=True),
+    sa.Column('description', sa.String(), nullable=True),
     sa.Column('restaurant_id', sa.Integer(), nullable=True),
     sa.Column('availability', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['restaurant_id'], ['restaurants.id'], name=op.f('fk_menu_items_restaurant_id_restaurants')),
