@@ -18,7 +18,7 @@ load_dotenv()
 #creates a Flask APP Instance
 app= Flask(__name__)
 #Enables communication with the frontend
-CORS(app, supports_credentials=True, origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'https://quick-bite-theta-sable.vercel.app'])
+CORS(app, supports_credentials=True, origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'https://quick-bite-theta-sable.vercel.app', 'https://quick-bite-theta-sable.vercel.app/'])
 #For the creation of databases
 # Use DATABASE_URL if set, otherwise use local SQLite for development
 database_url = os.getenv("DATABASE_URL")
@@ -30,6 +30,15 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.json.compact = False
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key')
+
+# Session cookie configuration for cross-origin requests (production)
+# Only enable Secure and SameSite when in production (HTTPS)
+if os.getenv('FLASK_ENV') == 'production':
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+else:
+    app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 # db is already initialized with metadata in extensions.py
 db.init_app(app)
 #For restful Apis
