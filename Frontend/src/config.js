@@ -4,7 +4,7 @@
 // Just edit the PRODUCTION_BACKEND_URL below to point to your deployed backend
 
 // Your production backend URL (e.g., Render, Railway, etc.)
-const PRODUCTION_BACKEND_URL = 'https://your-quickbite-backend.onrender.com';
+const PRODUCTION_BACKEND_URL = 'https://quickbite-vzfk.onrender.com';
 
 // Local development backend URL
 const LOCAL_BACKEND_URL = 'http://localhost:5555';
