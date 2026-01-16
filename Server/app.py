@@ -3,7 +3,6 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
 from dotenv import load_dotenv
-from sqlalchemy_serializer import SerializerMixin
 from datetime import datetime
 import pytz
 import os
@@ -21,10 +20,16 @@ app= Flask(__name__)
 #Enables communication with the frontend
 CORS(app, supports_credentials=True, origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'https://quick-bite-theta-sable.vercel.app'])
 #For the creation of databases
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+# Use DATABASE_URL if set, otherwise use local SQLite for development
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Fallback to local SQLite for development
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.json.compact = False
-app.secret_key = os.getenv('SECRET_KEY')
+app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key')
 # db is already initialized with metadata in extensions.py
 db.init_app(app)
 #For restful Apis

@@ -9,7 +9,6 @@ Flask-SQLAlchemy==3.1.1
 
 # Database and Serialization
 SQLAlchemy==2.0.23
-SQLAlchemy-Serializer==0.3.0
 Alembic==1.13.0
 
 # Configuration and Utilities

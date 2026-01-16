@@ -1,6 +1,5 @@
 from extensions import db, bcrypt
-from sqlalchemy_serializer import SerializerMixin
-from datetime import datetime, timezone
+from datetime import datetime
 import pytz
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -11,7 +10,7 @@ order_menuitem_association = db.Table('order_menuitem_association',
     db.Column('menu_item_id', db.Integer, db.ForeignKey('menu_items.id'), primary_key=True)
 )
 
-class Admin(db.Model, SerializerMixin):
+class Admin(db.Model):
     __tablename__ = 'admins'
     id= db.Column(db.Integer, primary_key=True)
     name= db.Column(db.String, nullable=False)
@@ -31,10 +30,18 @@ class Admin(db.Model, SerializerMixin):
     def authenticate(self, password):
         return bcrypt.check_password_hash(self._password_hash, password.encode('utf-8'))
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'restaurants': [r.to_dict() for r in self.restaurants] if self.restaurants else []
+        }
+    
     def __repr__(self):
         return f'<Admin {self.id} {self.name}>'
 
-class Restaurant(db.Model, SerializerMixin):
+class Restaurant(db.Model):
     __tablename__ = 'restaurants'
     id= db.Column(db.Integer, primary_key=True)
     address= db.Column(db.String, nullable=False)
@@ -66,11 +73,25 @@ class Restaurant(db.Model, SerializerMixin):
     def authenticate(self, password):
         return bcrypt.check_password_hash(self._password_hash, password.encode('utf-8'))
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'address': self.address,
+            'contact': self.contact,
+            'logo': self.logo,
+            'paybill_number': self.paybill_number,
+            'bio': self.bio,
+            'rating': self.rating,
+            'admin_id': self.admin_id
+        }
+    
     def __repr__(self):
         return f'<Restaurant {self.id} {self.name}>'  
     
  
-class DeliveryAgent(db.Model, SerializerMixin):
+class DeliveryAgent(db.Model):
     __tablename__ = 'delivery_agents'
     id= db.Column(db.Integer, primary_key=True)
     name= db.Column(db.String, nullable=False)
@@ -97,11 +118,22 @@ class DeliveryAgent(db.Model, SerializerMixin):
     def authenticate(self, password):
         return bcrypt.check_password_hash(self._password_hash, password.encode('utf-8'))
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'contact': self.contact,
+            'image': self.image,
+            'rating': self.rating,
+            'restaurant_id': self.restaurant_id
+        }
+
     def __repr__(self):
         return f'<DeliveryAgent {self.id} {self.name}>'   
 
 
-class DeliveryReview(db.Model, SerializerMixin):
+class DeliveryReview(db.Model):
     __tablename__= 'delivery_reviews'
     id= db.Column(db.Integer, primary_key=True)
     comment= db.Column(db.String, nullable=False)
@@ -114,11 +146,21 @@ class DeliveryReview(db.Model, SerializerMixin):
     delivery_agent = db.relationship('DeliveryAgent', back_populates='delivery_reviews')
     customer = db.relationship('Customer', back_populates='delivery_reviews')
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'comment': self.comment,
+            'rating': self.rating,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'delivery_agent_id': self.delivery_agent_id,
+            'customer_id': self.customer_id
+        }
+    
     def __repr__(self):
         return f'<DeliveryReview {self.id} {self.comment}>'
 
 
-class RestaurantReview(db.Model, SerializerMixin):
+class RestaurantReview(db.Model):
     __tablename__= 'restaurant_reviews'
     id= db.Column(db.Integer, primary_key=True)
     comment= db.Column(db.String, nullable=False)
@@ -130,11 +172,21 @@ class RestaurantReview(db.Model, SerializerMixin):
     restaurant = db.relationship('Restaurant', back_populates='restaurant_reviews')
     customer = db.relationship('Customer', back_populates='restaurant_reviews')
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'comment': self.comment,
+            'rating': self.rating,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'restaurant_id': self.restaurant_id,
+            'customer_id': self.customer_id
+        }
+    
     def __repr__(self):
         return f'<RestaurantReview {self.id} {self.comment}>'
 
 
-class MenuItem(db.Model, SerializerMixin):
+class MenuItem(db.Model):
     __tablename__= 'menu_items'
     id= db.Column(db.Integer, primary_key=True)
     name= db.Column(db.String, nullable=False)
@@ -147,10 +199,21 @@ class MenuItem(db.Model, SerializerMixin):
     restaurant = db.relationship('Restaurant', back_populates='menu_items')
     orders = db.relationship('Order', secondary=order_menuitem_association, back_populates='menu_items')
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'unit_price': self.unit_price,
+            'image': self.image,
+            'description': self.description,
+            'availability': self.availability,
+            'restaurant_id': self.restaurant_id
+        }
+
     def __repr__(self):
         return f'<MenuItem {self.id} {self.name}>'
 
-class Order(db.Model, SerializerMixin):
+class Order(db.Model):
     __tablename__="orders"
     id= db.Column(db.Integer, primary_key=True)
     created_at= db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Nairobi')))
@@ -168,10 +231,23 @@ class Order(db.Model, SerializerMixin):
     customer = db.relationship('Customer', back_populates='orders')
     payment = db.relationship('Payment', back_populates='order', uselist=False)
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'delivery_time': self.delivery_time.isoformat() if self.delivery_time else None,
+            'delivery_address': self.delivery_address,
+            'payment_status': self.payment_status,
+            'total_price': self.total_price,
+            'restaurant_id': self.restaurant_id,
+            'delivery_agent_id': self.delivery_agent_id,
+            'customer_id': self.customer_id
+        }
+    
     def __repr__(self):
         return f'<Order {self.id} {self.created_at}>'
 
-class Customer(db.Model, SerializerMixin):
+class Customer(db.Model):
     __tablename__= 'customers'
     id= db.Column(db.Integer, primary_key=True)
     name= db.Column(db.String, nullable=False)
@@ -197,10 +273,19 @@ class Customer(db.Model, SerializerMixin):
     def authenticate(self, password):
         return bcrypt.check_password_hash(self._password_hash, password.encode('utf-8'))
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'contact': self.contact,
+            'image': self.image
+        }
+
     def __repr__(self):
         return f'<Customer {self.id} {self.name}>'
 
-class Payment(db.Model, SerializerMixin):
+class Payment(db.Model):
     __tablename__= 'payments'
     id= db.Column(db.Integer, primary_key=True)
     amount= db.Column(db.Float, nullable=False)
@@ -214,6 +299,17 @@ class Payment(db.Model, SerializerMixin):
     order = db.relationship('Order', back_populates='payment')
     customer = db.relationship('Customer', back_populates='payments')
   
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'amount': self.amount,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'method': self.method,
+            'restaurant_id': self.restaurant_id,
+            'order_id': self.order_id,
+            'customer_id': self.customer_id
+        }
+    
     def __repr__(self):
         return f'<Payment {self.id} {self.amount}>'
 
