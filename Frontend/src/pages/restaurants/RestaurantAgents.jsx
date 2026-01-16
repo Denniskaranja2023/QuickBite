@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, Plus, Trash2, Star, Phone, Mail, Upload, User } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 function RestaurantAgents() {
   const [agents, setAgents] = useState([]);
@@ -22,7 +23,7 @@ function RestaurantAgents() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/restaurant/agents', {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/agents`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -44,7 +45,7 @@ function RestaurantAgents() {
     
     try {
       setUploading(true);
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -76,7 +77,7 @@ function RestaurantAgents() {
     }
 
     try {
-      const response = await fetch('/api/restaurant/agents', {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/agents`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,7 +105,7 @@ function RestaurantAgents() {
     if (!window.confirm('Are you sure you want to delete this agent?')) return;
 
     try {
-      const response = await fetch(`/api/restaurant/agents/${agentId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/agents/${agentId}`, {
         method: 'DELETE',
         credentials: 'include',
       });

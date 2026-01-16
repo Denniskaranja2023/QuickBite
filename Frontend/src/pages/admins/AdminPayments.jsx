@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, DollarSign, TrendingUp } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 function AdminPayments() {
   const [payments, setPayments] = useState([]);
@@ -15,7 +16,7 @@ function AdminPayments() {
 
   const fetchPayments = async () => {
     try {
-      const response = await fetch('/api/admin/payments', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/payments`, {
         credentials: 'include',
       });
       if (response.ok) {

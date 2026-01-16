@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, DollarSign, Users, Star, TrendingUp, Clock, Plus, Edit2, Trash2, X, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import API_BASE_URL from '../../config';
 
 // Currency formatter for KSh
 const formatCurrency = (amount) => {
@@ -42,12 +43,12 @@ function RestaurantDashboard() {
   const fetchDashboardData = async () => {
     try {
       const [profileRes, ordersRes, paymentsRes, agentsRes, customersRes, menuRes] = await Promise.all([
-        fetch('/api/restaurant/account', { credentials: 'include' }),
-        fetch('/api/restaurant/orders', { credentials: 'include' }),
-        fetch('/api/restaurant/payments', { credentials: 'include' }),
-        fetch('/api/restaurant/agents', { credentials: 'include' }),
-        fetch('/api/restaurant/top-customers', { credentials: 'include' }),
-        fetch('/api/restaurant/menuitems', { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/restaurant/account`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/restaurant/orders`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/restaurant/payments`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/restaurant/agents`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/restaurant/top-customers`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/restaurant/menuitems`, { credentials: 'include' }),
       ]);
 
       if (profileRes.ok) {
@@ -91,7 +92,7 @@ function RestaurantDashboard() {
   const handleDeleteMenuItem = async (id) => {
     if (window.confirm('Are you sure you want to delete this menu item?')) {
       try {
-        const response = await fetch(`/api/restaurant/menuitems/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/restaurant/menuitems/${id}`, {
           method: 'DELETE',
           credentials: 'include',
         });
@@ -118,7 +119,7 @@ function RestaurantDashboard() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/restaurant/menuitems/${editingItem.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/menuitems/${editingItem.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -128,7 +129,7 @@ function RestaurantDashboard() {
         // Close modal first for better UX
         setEditingItem(null);
         // Re-fetch menu items to get updated data from server
-        const menuRes = await fetch('/api/restaurant/menuitems', { credentials: 'include' });
+        const menuRes = await fetch(`${API_BASE_URL}/api/restaurant/menuitems`, { credentials: 'include' });
         if (menuRes.ok) {
           const items = await menuRes.json();
           setMenuItems(items);
@@ -142,7 +143,7 @@ function RestaurantDashboard() {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/restaurant/menuitems', {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/menuitems`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

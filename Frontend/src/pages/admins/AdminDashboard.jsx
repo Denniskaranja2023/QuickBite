@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { UtensilsCrossed, Users, DollarSign, ShoppingBag, TrendingUp, Star, MapPin } from 'lucide-react';
+import { UtensilsCrossed, Users, DollarSign, TrendingUp, Star, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import API_BASE_URL from '../../config';
 
 function AdminDashboard() {
   const [stats, setStats] = useState({
     totalRestaurants: 0,
     totalCustomers: 0,
     totalRevenue: 0,
-    totalOrders: 0,
   });
   const [topRestaurants, setTopRestaurants] = useState([]);
   const [topCustomers, setTopCustomers] = useState([]);
@@ -20,11 +20,11 @@ function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       const [restaurantsRes, customersRes, paymentsRes, topRestaurantsRes, topCustomersRes] = await Promise.all([
-        fetch('/api/admin/restaurants', { credentials: 'include' }),
-        fetch('/api/admin/customers', { credentials: 'include' }),
-        fetch('/api/admin/payments', { credentials: 'include' }),
-        fetch('/api/admin/top-restaurants', { credentials: 'include' }),
-        fetch('/api/admin/top-customers', { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/admin/restaurants`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/admin/customers`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/admin/payments`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/admin/top-restaurants`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/admin/top-customers`, { credentials: 'include' }),
       ]);
 
       if (restaurantsRes.ok) {
@@ -40,7 +40,7 @@ function AdminDashboard() {
       if (paymentsRes.ok) {
         const payments = await paymentsRes.json();
         const revenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        setStats(prev => ({ ...prev, totalRevenue: revenue, totalOrders: payments.length }));
+        setStats(prev => ({ ...prev, totalRevenue: revenue }));
       }
 
       if (topRestaurantsRes.ok) {
@@ -84,7 +84,7 @@ function AdminDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Link to="/admin/restaurants" className="card bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
@@ -112,15 +112,6 @@ function AdminDashboard() {
             <DollarSign className="h-12 w-12 text-green-200" />
           </div>
         </Link>
-        <div className="card bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm mb-1">Total Orders</p>
-              <p className="text-3xl font-bold">{stats.totalOrders}</p>
-            </div>
-            <ShoppingBag className="h-12 w-12 text-purple-200" />
-          </div>
-        </div>
       </div>
 
       {/* Quick Actions */}
@@ -189,10 +180,6 @@ function AdminDashboard() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-900 truncate">{restaurant.name}</h3>
                     <div className="flex items-center text-sm text-gray-500 mt-1">
-                      <ShoppingBag className="h-4 w-4 mr-1" />
-                      <span>{restaurant.order_count} orders</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500 mt-1">
                       <DollarSign className="h-4 w-4 mr-1" />
                       <span>{formatCurrency(restaurant.total_revenue)}</span>
                     </div>
@@ -244,10 +231,6 @@ function AdminDashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-900 truncate">{customer.name}</h3>
-                    <div className="flex items-center text-sm text-gray-500 mt-1">
-                      <ShoppingBag className="h-4 w-4 mr-1" />
-                      <span>{customer.order_count} orders</span>
-                    </div>
                     <div className="flex items-center text-sm text-gray-500 mt-1">
                       <DollarSign className="h-4 w-4 mr-1" />
                       <span>{formatCurrency(customer.total_spent)} spent</span>

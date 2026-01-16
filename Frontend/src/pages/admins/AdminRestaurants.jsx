@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UtensilsCrossed, Plus, Trash2, Star, MapPin, Mail, Phone } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 function AdminRestaurants() {
   const [restaurants, setRestaurants] = useState([]);
@@ -22,7 +23,7 @@ function AdminRestaurants() {
 
   const fetchRestaurants = async () => {
     try {
-      const response = await fetch('/api/admin/restaurants', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/restaurants`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -41,7 +42,7 @@ function AdminRestaurants() {
     setError('');
 
     try {
-      const response = await fetch('/api/admin/restaurants', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/restaurants`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ function AdminRestaurants() {
     if (!window.confirm('Are you sure you want to delete this restaurant?')) return;
 
     try {
-      const response = await fetch(`/api/admin/restaurants/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/restaurants/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });

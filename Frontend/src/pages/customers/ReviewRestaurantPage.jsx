@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ArrowLeft } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 function ReviewRestaurantPage() {
   const { id } = useParams();
@@ -19,7 +20,7 @@ function ReviewRestaurantPage() {
 
   const fetchRestaurant = async () => {
     try {
-      const response = await fetch(`/api/admin/restaurants/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/customer/restaurants/${id}`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -37,7 +38,7 @@ function ReviewRestaurantPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/customer/reviews/restaurant', {
+      const response = await fetch(`${API_BASE_URL}/api/customer/restaurant-reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

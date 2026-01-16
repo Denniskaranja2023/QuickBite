@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Homepage from './pages/Homepage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import API_BASE_URL from './config';
 
 // Customer pages
 import CustomerLayout from './pages/customers/CustomerLayout';
@@ -48,7 +49,7 @@ function App() {
 
   const checkSession = async () => {
     try {
-      const response = await fetch('/api/check_session', {
+      const response = await fetch(`${API_BASE_URL}/api/check_session`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -67,7 +68,7 @@ function App() {
       setUser(null);
       navigate('/login');
       try {
-        await fetch('/api/logout', {
+        await fetch(`${API_BASE_URL}/api/logout`, {
           method: 'DELETE',
           credentials: 'include',
         });

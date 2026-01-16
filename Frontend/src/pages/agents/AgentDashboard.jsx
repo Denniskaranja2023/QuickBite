@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, Star, Clock, MapPin, User, Phone, CheckCircle, Package } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 function AgentDashboard() {
   const [stats, setStats] = useState({
@@ -19,9 +20,9 @@ function AgentDashboard() {
   const fetchDashboardData = async () => {
     try {
       const [pendingRes, deliveredRes, reviewsRes] = await Promise.all([
-        fetch('/api/agent/pending-orders', { credentials: 'include' }),
-        fetch('/api/agent/delivered-orders', { credentials: 'include' }),
-        fetch('/api/agent/reviews', { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/agent/pending-orders`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/agent/delivered-orders`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/api/agent/reviews`, { credentials: 'include' }),
       ]);
 
       let pending = [];
@@ -72,7 +73,7 @@ function AgentDashboard() {
     setMarkingDelivery(orderId);
     try {
       const deliveryTime = new Date().toISOString();
-      const response = await fetch(`/api/agent/orders/${orderId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/agent/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

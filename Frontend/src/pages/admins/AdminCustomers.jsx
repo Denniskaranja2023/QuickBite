@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, Trash2, Mail, Phone, User } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 function AdminCustomers() {
   const [customers, setCustomers] = useState([]);
@@ -11,7 +12,7 @@ function AdminCustomers() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/admin/customers', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/customers`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -29,7 +30,7 @@ function AdminCustomers() {
     if (!window.confirm('Are you sure you want to delete this customer?')) return;
 
     try {
-      const response = await fetch(`/api/admin/customers/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/customers/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });

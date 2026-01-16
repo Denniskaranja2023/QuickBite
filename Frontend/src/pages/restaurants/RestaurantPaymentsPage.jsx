@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, DollarSign, TrendingUp, User } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 // Currency formatter for KSh
 const formatCurrency = (amount) => {
@@ -20,7 +21,7 @@ function RestaurantPaymentsPage() {
 
   const fetchPayments = async () => {
     try {
-      const response = await fetch('/api/restaurant/payments', {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/payments`, {
         credentials: 'include',
       });
       if (response.ok) {

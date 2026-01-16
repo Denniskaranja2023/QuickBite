@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, User, Trash2, CheckCircle, XCircle, MapPin, Clock, DollarSign, Package, RefreshCw } from 'lucide-react';
 import ImageWithFallback from '../../components/ImageWithFallback';
+import API_BASE_URL from '../../config';
 
 function RestaurantOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -17,7 +18,7 @@ function RestaurantOrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('/api/restaurant/orders', {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/orders`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -33,7 +34,7 @@ function RestaurantOrdersPage() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/restaurant/agents', {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/agents`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -47,7 +48,7 @@ function RestaurantOrdersPage() {
 
   const handleAssignAgent = async (orderId, agentId) => {
     try {
-      const response = await fetch(`/api/restaurant/orders/${orderId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +71,7 @@ function RestaurantOrdersPage() {
     if (!window.confirm('Are you sure you want to cancel and delete this order?')) return;
 
     try {
-      const response = await fetch(`/api/restaurant/orders/${orderId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/orders/${orderId}`, {
         method: 'DELETE',
         credentials: 'include',
       });

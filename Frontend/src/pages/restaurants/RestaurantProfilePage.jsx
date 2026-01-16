@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Mail, MapPin, Phone, Save, Upload, X } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 function RestaurantProfilePage() {
   const [restaurant, setRestaurant] = useState(null);
@@ -23,7 +24,7 @@ function RestaurantProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/restaurant/account', {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/account`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -69,7 +70,7 @@ function RestaurantProfilePage() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -102,7 +103,7 @@ function RestaurantProfilePage() {
     setSaving(true);
 
     try {
-      const response = await fetch('/api/restaurant/account', {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/account`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

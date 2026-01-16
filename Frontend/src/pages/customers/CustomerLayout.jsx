@@ -147,7 +147,7 @@ function CustomerLayout({ user, onLogout }) {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 p-4 sm:p-8 pt-20 lg:pt-8 min-h-screen">
+      <main className="lg:ml-64 p-4 sm:p-8 pt-20 lg:pt-8 min-h-screen overflow-visible">
         <Outlet />
       </main>
     </div>

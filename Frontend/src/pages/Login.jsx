@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UtensilsCrossed, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { UtensilsCrossed, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import API_BASE_URL from '../config';
 
 function Login({ setUser }) {
   const [formData, setFormData] = useState({
@@ -19,7 +20,7 @@ function Login({ setUser }) {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,15 +45,31 @@ function Login({ setUser }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        {/* Logo */}
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center space-x-2">
+              <UtensilsCrossed className="h-8 w-8 text-primary-500" />
+              <span className="text-2xl font-bold text-gray-900">QuickBite</span>
+            </Link>
+            <Link
+              to="/"
+              className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 font-medium transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span>Back to Home</span>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Login Form */}
+      <div className="max-w-md w-full mx-auto mt-8 px-4 sm:px-6 lg:px-8 pb-12">
+        {/* Form Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2">
-            <UtensilsCrossed className="h-10 w-10 text-primary-500" />
-            <span className="text-3xl font-bold text-gray-900">QuickBite</span>
-          </Link>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome back</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
           <p className="mt-2 text-sm text-gray-600">Sign in to your account</p>
         </div>
 

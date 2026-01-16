@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Star, MessageSquare, User } from 'lucide-react';
 import ImageWithFallback from '../../components/ImageWithFallback';
+import API_BASE_URL from '../../config';
 
 function RestaurantReviewPage() {
   const [reviews, setReviews] = useState([]);
@@ -12,7 +13,7 @@ function RestaurantReviewPage() {
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch('/api/restaurant/reviews', {
+      const response = await fetch(`${API_BASE_URL}/api/restaurant/reviews`, {
         credentials: 'include',
       });
       if (response.ok) {

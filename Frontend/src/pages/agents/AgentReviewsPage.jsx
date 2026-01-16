@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Star, MessageSquare, User } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 function AgentReviewsPage() {
   const [reviews, setReviews] = useState([]);
@@ -12,7 +13,7 @@ function AgentReviewsPage() {
   const fetchReviews = async () => {
     try {
       // Note: You'll need to create this endpoint
-      const response = await fetch('/api/agent/reviews', {
+      const response = await fetch(`${API_BASE_URL}/api/agent/reviews`, {
         credentials: 'include',
       });
       if (response.ok) {

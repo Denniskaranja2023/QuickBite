@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UtensilsCrossed, Mail, Lock, Eye, EyeOff, User, Phone, MapPin } from 'lucide-react';
+import { UtensilsCrossed, Mail, Lock, Eye, EyeOff, User, Phone, ArrowLeft } from 'lucide-react';
+import API_BASE_URL from '../config';
 
 function Signup({ setUser }) {
   const [formData, setFormData] = useState({
@@ -8,7 +9,6 @@ function Signup({ setUser }) {
     email: '',
     password: '',
     contact: '',
-    address: '',
     user_type: 'customer',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -23,7 +23,7 @@ function Signup({ setUser }) {
 
     try {
       // Note: You'll need to create a signup endpoint in your backend
-      const response = await fetch('/api/signup', {
+      const response = await fetch(`${API_BASE_URL}/api/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,15 +48,31 @@ function Signup({ setUser }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        {/* Logo */}
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center space-x-2">
+              <UtensilsCrossed className="h-8 w-8 text-primary-500" />
+              <span className="text-2xl font-bold text-gray-900">QuickBite</span>
+            </Link>
+            <Link
+              to="/"
+              className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 font-medium transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span>Back to Home</span>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Signup Form */}
+      <div className="max-w-md w-full mx-auto mt-8 px-4 sm:px-6 lg:px-8 pb-12">
+        {/* Form Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2">
-            <UtensilsCrossed className="h-10 w-10 text-primary-500" />
-            <span className="text-3xl font-bold text-gray-900">QuickBite</span>
-          </Link>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">Create your account</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
           <p className="mt-2 text-sm text-gray-600">Join QuickBite today</p>
         </div>
 
@@ -148,26 +164,6 @@ function Signup({ setUser }) {
                   onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
                   className="input-field pl-10"
                   placeholder="+1234567890"
-                />
-              </div>
-            </div>
-
-            {/* Address */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                {formData.user_type === 'restaurant' ? 'Restaurant Address' : 'Address'}
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  id="address"
-                  name="address"
-                  type="text"
-                  required
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="input-field pl-10"
-                  placeholder="123 Main St, City"
                 />
               </div>
             </div>

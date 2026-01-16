@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ArrowLeft } from 'lucide-react';
+import API_BASE_URL from '../../config';
 
 function ReviewAgentPage() {
   const { id } = useParams();
@@ -20,7 +21,7 @@ function ReviewAgentPage() {
   const fetchAgent = async () => {
     try {
       // Note: You'll need to create this endpoint
-      const response = await fetch(`/api/agent/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/agent/${id}`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -38,7 +39,7 @@ function ReviewAgentPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/customer/reviews/agent', {
+      const response = await fetch(`${API_BASE_URL}/api/customer/delivery-reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
