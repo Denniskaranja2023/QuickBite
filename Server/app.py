@@ -7,6 +7,7 @@ from sqlalchemy_serializer import SerializerMixin
 from datetime import datetime
 import pytz
 import os
+import requests
 from extensions import db, bcrypt
 
 # Create uploads folder
@@ -35,6 +36,32 @@ bcrypt.init_app(app)
 
 # Import models after db and bcrypt are initialized to avoid circular import
 from models import Restaurant, DeliveryAgent, Customer, MenuItem, Order, Payment, RestaurantReview, DeliveryReview, Admin
+
+# Helper function to update average rating for a restaurant
+def update_restaurant_rating(restaurant_id):
+    """Calculate and update the average rating for a restaurant based on all its reviews"""
+    if not restaurant_id:
+        return
+    reviews = RestaurantReview.query.filter_by(restaurant_id=restaurant_id).all()
+    if reviews:
+        avg_rating = sum(r.rating for r in reviews) / len(reviews)
+        restaurant = Restaurant.query.get(restaurant_id)
+        if restaurant:
+            restaurant.rating = round(avg_rating, 1)
+            db.session.commit()
+
+# Helper function to update average rating for a delivery agent
+def update_delivery_agent_rating(agent_id):
+    """Calculate and update the average rating for a delivery agent based on all their reviews"""
+    if not agent_id:
+        return
+    reviews = DeliveryReview.query.filter_by(delivery_agent_id=agent_id).all()
+    if reviews:
+        avg_rating = sum(r.rating for r in reviews) / len(reviews)
+        agent = DeliveryAgent.query.get(agent_id)
+        if agent:
+            agent.rating = round(avg_rating, 1)
+            db.session.commit()
 
 #1. Authentication Routes
 class Login(Resource):
@@ -106,7 +133,7 @@ class Signup(Resource):
         address = data.get('address')
         user_type = data.get('user_type')
         
-        if not name or not email or not password or not contact or not address or not user_type:
+        if not name or not email or not password or not contact or not user_type:
             return make_response({'error': 'All fields are required'}, 400)
         
         # Check if user already exists
@@ -124,8 +151,7 @@ class Signup(Resource):
             user = Customer(
                 name=name,
                 email=email,
-                contact=contact,
-                address=address
+                contact=contact
             )
             user.password_hash = password
             db.session.add(user)
@@ -134,7 +160,7 @@ class Signup(Resource):
                 name=name,
                 email=email,
                 contact=contact,
-                address=address,
+                address=address or '',
                 logo=data.get('logo'),
                 bio=data.get('bio'),
                 paybill_number=data.get('paybill_number')
@@ -384,6 +410,85 @@ api.add_resource(AdminCustomers, '/api/admin/customers')
 api.add_resource(AdminCustomerById, '/api/admin/customers/<int:id>')
 api.add_resource(AdminTopRestaurants, '/api/admin/top-restaurants')
 api.add_resource(AdminTopCustomers, '/api/admin/top-customers')
+
+# Platform-wide stats endpoint (public)
+class PlatformStats(Resource):
+    def get(self):
+        """Get platform-wide statistics for the homepage"""
+        total_restaurants = Restaurant.query.count()
+        total_customers = Customer.query.count()
+        total_agents = DeliveryAgent.query.count()
+        
+        return make_response({
+            'restaurants': total_restaurants,
+            'customers': total_customers,
+            'agents': total_agents
+        }, 200)
+
+api.add_resource(PlatformStats, '/api/stats')
+
+# Homepage public endpoints
+class HomepageTopRestaurants(Resource):
+    def get(self):
+        """Get top 5 restaurants by order count for homepage (public endpoint)"""
+        # Get top 5 restaurants by order count
+        top_restaurants = db.session.query(
+            Restaurant,
+            db.func.count(Order.id).label('order_count')
+        ).outerjoin(Order).group_by(
+            Restaurant.id
+        ).order_by(
+            db.func.count(Order.id).desc()
+        ).limit(5).all()
+        
+        result = []
+        for restaurant, order_count in top_restaurants:
+            result.append({
+                'id': restaurant.id,
+                'name': restaurant.name,
+                'rating': restaurant.rating,
+                'logo': restaurant.logo,
+                'address': restaurant.address,
+                'bio': restaurant.bio,
+                'order_count': order_count
+            })
+        
+        return make_response(result, 200)
+
+class HomepageTopMenuItems(Resource):
+    def get(self):
+        """Get top 5 menu items by order count for homepage (public endpoint)"""
+        # Get menu items with their order counts
+        # First, get all menu items with their order counts
+        menu_items_query = db.session.query(
+            MenuItem
+        ).all()
+        
+        # Calculate order count for each menu item
+        result = []
+        for menu_item in menu_items_query:
+            order_count = len(menu_item.orders)
+            restaurant = menu_item.restaurant
+            result.append({
+                'id': menu_item.id,
+                'name': menu_item.name,
+                'unit_price': menu_item.unit_price,
+                'image': menu_item.image,
+                'description': menu_item.description,
+                'restaurant_id': menu_item.restaurant_id,
+                'restaurant_name': restaurant.name if restaurant else 'Unknown Restaurant',
+                'restaurant_logo': restaurant.logo if restaurant else None,
+                'order_count': order_count
+            })
+        
+        # Sort by order count descending and take top 5
+        result.sort(key=lambda x: x['order_count'], reverse=True)
+        result = result[:5]
+        
+        return make_response(result, 200)
+
+api.add_resource(HomepageTopRestaurants, '/api/homepage/top-restaurants')
+api.add_resource(HomepageTopMenuItems, '/api/homepage/top-menu-items')
 
 #3. Restaurant routes
 class RestaurantAccount(Resource):
@@ -986,6 +1091,7 @@ class CustomerMenuItems(Resource):
             'name': m.name,
             'unit_price': m.unit_price,
             'image': m.image,
+            'description': m.description,
             'availability': m.availability,
             'restaurant_id': m.restaurant_id
         } for m in menu_items], 200)
@@ -999,17 +1105,44 @@ class CustomerOrders(Resource):
         customer_id = session.get('user_id')
         orders = Order.query.filter_by(customer_id=customer_id).all()
         
-        return make_response([{
-            'id': o.id,
-            'created_at': o.created_at.isoformat() if o.created_at else None,
-            'delivery_time': o.delivery_time.isoformat() if o.delivery_time else None,
-            'delivery_address': o.delivery_address,
-            'payment_status': o.payment_status,
-            'total_price': o.total_price,
-            'restaurant_id': o.restaurant_id,
-            'delivery_agent_id': o.delivery_agent_id,
-            'customer_id': o.customer_id
-        } for o in orders], 200)
+        result = []
+        for o in orders:
+            # Get restaurant details
+            restaurant = o.restaurant
+            restaurant_data = None
+            if restaurant:
+                restaurant_data = {
+                    'id': restaurant.id,
+                    'name': restaurant.name,
+                    'logo': restaurant.logo
+                }
+            
+            # Build menu items list (quantity defaults to 1 since it's not stored)
+            menu_items = []
+            for item in o.menu_items:
+                menu_items.append({
+                    'id': item.id,
+                    'name': item.name,
+                    'unit_price': item.unit_price,
+                    'image': item.image,
+                    'quantity': 1
+                })
+            
+            result.append({
+                'id': o.id,
+                'created_at': o.created_at.isoformat() if o.created_at else None,
+                'delivery_time': o.delivery_time.isoformat() if o.delivery_time else None,
+                'delivery_address': o.delivery_address,
+                'payment_status': o.payment_status,
+                'total_price': o.total_price,
+                'restaurant_id': o.restaurant_id,
+                'delivery_agent_id': o.delivery_agent_id,
+                'customer_id': o.customer_id,
+                'restaurant': restaurant_data,
+                'menu_items': menu_items
+            })
+        
+        return make_response(result, 200)
     
     def post(self):
         if session.get('user_type') != 'customer':
@@ -1058,6 +1191,29 @@ class CustomerOrderById(Resource):
         if not order or order.customer_id != customer_id:
             return make_response({'error': 'Order not found'}, 404)
         
+        # Get restaurant details
+        restaurant = order.restaurant
+        restaurant_data = None
+        if restaurant:
+            restaurant_data = {
+                'id': restaurant.id,
+                'name': restaurant.name,
+                'logo': restaurant.logo,
+                'contact': restaurant.contact,
+                'address': restaurant.address
+            }
+        
+        # Build menu items list
+        menu_items = []
+        for item in order.menu_items:
+            menu_items.append({
+                'id': item.id,
+                'name': item.name,
+                'unit_price': item.unit_price,
+                'image': item.image,
+                'quantity': 1
+            })
+        
         return make_response({
             'id': order.id,
             'created_at': order.created_at.isoformat() if order.created_at else None,
@@ -1067,7 +1223,9 @@ class CustomerOrderById(Resource):
             'total_price': order.total_price,
             'restaurant_id': order.restaurant_id,
             'delivery_agent_id': order.delivery_agent_id,
-            'customer_id': order.customer_id
+            'customer_id': order.customer_id,
+            'restaurant': restaurant_data,
+            'menu_items': menu_items
         }, 200)
     
     def patch(self, id):
@@ -1115,15 +1273,22 @@ class CustomerPayments(Resource):
         customer_id = session.get('user_id')
         payments = Payment.query.filter_by(customer_id=customer_id).all()
         
-        return make_response([{
-            'id': p.id,
-            'amount': p.amount,
-            'method': p.method,
-            'created_at': p.created_at.isoformat() if p.created_at else None,
-            'order_id': p.order_id,
-            'customer_id': p.customer_id,
-            'restaurant_id': p.restaurant_id
-        } for p in payments], 200)
+        result = []
+        for p in payments:
+            restaurant = Restaurant.query.get(p.restaurant_id)
+            result.append({
+                'id': p.id,
+                'amount': p.amount,
+                'method': p.method,
+                'created_at': p.created_at.isoformat() if p.created_at else None,
+                'order_id': p.order_id,
+                'customer_id': p.customer_id,
+                'restaurant_id': p.restaurant_id,
+                'restaurant_name': restaurant.name if restaurant else 'Unknown Restaurant',
+                'restaurant_logo': restaurant.logo if restaurant else None
+            })
+        
+        return make_response(result, 200)
     
     def post(self):
         if session.get('user_type') != 'customer':
@@ -1204,6 +1369,9 @@ class CustomerRestaurantReviews(Resource):
         db.session.add(review)
         db.session.commit()
         
+        # Update restaurant average rating
+        update_restaurant_rating(restaurant_id)
+        
         return make_response({'message': 'Review created', 'id': review.id}, 201)
 
 
@@ -1250,8 +1418,60 @@ class CustomerDeliveryReviews(Resource):
         db.session.add(review)
         db.session.commit()
         
+        # Update delivery agent average rating
+        update_delivery_agent_rating(delivery_agent_id)
+        
         return make_response({'message': 'Review created', 'id': review.id}, 201)
 class CustomerRestaurantReviewById(Resource):
+    def get(self, id):
+        if session.get('user_type') != 'customer':
+            return make_response({'error': 'Unauthorized'}, 403)
+
+        customer_id = session.get('user_id')
+        review = RestaurantReview.query.get(id)
+
+        if not review or review.customer_id != customer_id:
+            return make_response({'error': 'Review not found'}, 404)
+        
+        restaurant = Restaurant.query.get(review.restaurant_id)
+        return make_response({
+            'id': review.id,
+            'comment': review.comment,
+            'rating': review.rating,
+            'created_at': review.created_at.isoformat() if review.created_at else None,
+            'restaurant_id': review.restaurant_id,
+            'restaurant_name': restaurant.name if restaurant else 'Unknown Restaurant',
+            'customer_id': review.customer_id
+        }, 200)
+    
+    def patch(self, id):
+        if session.get('user_type') != 'customer':
+            return make_response({'error': 'Unauthorized'}, 403)
+
+        customer_id = session.get('user_id')
+        review = RestaurantReview.query.get(id)
+
+        if not review or review.customer_id != customer_id:
+            return make_response({'error': 'Review not found'}, 404)
+
+        data = request.get_json()
+        old_restaurant_id = review.restaurant_id
+        if 'rating' in data:
+            review.rating = data['rating']
+        if 'comment' in data:
+            review.comment = data['comment']
+        
+        db.session.commit()
+        
+        # Update restaurant average rating (handle case where restaurant_id might have changed)
+        update_restaurant_rating(old_restaurant_id)
+        
+        return make_response({'message': 'Review updated', 'review': {
+            'id': review.id,
+            'rating': review.rating,
+            'comment': review.comment
+        }}, 200)
+    
     def delete(self, id):
         if session.get('user_type') != 'customer':
             return make_response({'error': 'Unauthorized'}, 403)
@@ -1262,10 +1482,67 @@ class CustomerRestaurantReviewById(Resource):
         if not review or review.customer_id != customer_id:
             return make_response({'error': 'Review not found'}, 404)
 
+        # Store restaurant_id before deletion
+        restaurant_id = review.restaurant_id
+        
         db.session.delete(review)
         db.session.commit()
+        
+        # Update restaurant average rating
+        update_restaurant_rating(restaurant_id)
+        
         return make_response({'message': 'Review deleted'}, 200)
+
 class CustomerDeliveryReviewById(Resource):
+    def get(self, id):
+        if session.get('user_type') != 'customer':
+            return make_response({'error': 'Unauthorized'}, 403)
+
+        customer_id = session.get('user_id')
+        review = DeliveryReview.query.get(id)
+
+        if not review or review.customer_id != customer_id:
+            return make_response({'error': 'Review not found'}, 404)
+        
+        agent = DeliveryAgent.query.get(review.delivery_agent_id)
+        return make_response({
+            'id': review.id,
+            'comment': review.comment,
+            'rating': review.rating,
+            'created_at': review.created_at.isoformat() if review.created_at else None,
+            'delivery_agent_id': review.delivery_agent_id,
+            'agent_name': agent.name if agent else 'Unknown Agent',
+            'customer_id': review.customer_id
+        }, 200)
+    
+    def patch(self, id):
+        if session.get('user_type') != 'customer':
+            return make_response({'error': 'Unauthorized'}, 403)
+
+        customer_id = session.get('user_id')
+        review = DeliveryReview.query.get(id)
+
+        if not review or review.customer_id != customer_id:
+            return make_response({'error': 'Review not found'}, 404)
+
+        data = request.get_json()
+        old_agent_id = review.delivery_agent_id
+        if 'rating' in data:
+            review.rating = data['rating']
+        if 'comment' in data:
+            review.comment = data['comment']
+        
+        db.session.commit()
+        
+        # Update delivery agent average rating
+        update_delivery_agent_rating(old_agent_id)
+        
+        return make_response({'message': 'Review updated', 'review': {
+            'id': review.id,
+            'rating': review.rating,
+            'comment': review.comment
+        }}, 200)
+    
     def delete(self, id):
         if session.get('user_type') != 'customer':
             return make_response({'error': 'Unauthorized'}, 403)
@@ -1276,9 +1553,16 @@ class CustomerDeliveryReviewById(Resource):
         if not review or review.customer_id != customer_id:
             return make_response({'error': 'Review not found'}, 404)
 
+        # Store agent_id before deletion
+        agent_id = review.delivery_agent_id
+        
         db.session.delete(review)
         db.session.commit()
-        return make_response({'message': 'Review deleted'}, 200)  
+        
+        # Update delivery agent average rating
+        update_delivery_agent_rating(agent_id)
+        
+        return make_response({'message': 'Review deleted'}, 200)
     
     
 class CustomerAllReviews(Resource):
@@ -1322,7 +1606,33 @@ class CustomerAllReviews(Resource):
         
         return make_response(reviews, 200)
 
+class CustomerStats(Resource):
+    def get(self):
+        if session.get('user_type') != 'customer':
+            return make_response({'error': 'Unauthorized'}, 403)
+        
+        customer_id = session.get('user_id')
+        
+        # Get total restaurants count
+        total_restaurants = Restaurant.query.count()
+        
+        # Get all orders for the customer
+        orders = Order.query.filter_by(customer_id=customer_id).all()
+        
+        # Count delivered orders (those with delivery_time set)
+        delivered_orders = sum(1 for o in orders if o.delivery_time is not None)
+        
+        # Count pending orders (those with null delivery_time)
+        pending_orders = sum(1 for o in orders if o.delivery_time is None)
+        
+        return make_response({
+            'total_restaurants': total_restaurants,
+            'delivered_orders': delivered_orders,
+            'pending_orders': pending_orders
+        }, 200)
+
 api.add_resource(CustomerAccount, '/api/customer/account')
+api.add_resource(CustomerStats, '/api/customer/stats')
 api.add_resource(CustomerRestaurants, '/api/customer/restaurants')
 api.add_resource(CustomerRestaurantById, '/api/customer/restaurants/<int:id>')
 api.add_resource(CustomerMenuItems, '/api/customer/menuitems')
@@ -1612,6 +1922,172 @@ class UploadImage(Resource):
             return make_response({'url': f'/uploads/{filename}'}, 200)
 
 api.add_resource(UploadImage, '/api/upload')
+
+#7. M-Pesa Payment Routes
+class MpesaSTKPush(Resource):
+    def post(self):
+        if session.get('user_type') != 'customer':
+            return make_response({'error': 'Unauthorized'}, 403)
+        
+        customer_id = session.get('user_id')
+        data = request.get_json()
+        
+        order_id = data.get('order_id')
+        phone = data.get('phone')
+        amount = data.get('amount')
+        
+        if not order_id or not phone or not amount:
+            return make_response({'error': 'order_id, phone, and amount are required'}, 400)
+        
+        order = Order.query.get(order_id)
+        if not order or order.customer_id != customer_id:
+            return make_response({'error': 'Order not found'}, 404)
+        
+        if order.payment_status:
+            return make_response({'error': 'Order already paid'}, 400)
+        
+        # M-Pesa Configuration
+        mpesa_shortcode = os.getenv('MPESA_SHORTCODE', '')
+        mpesa_consumer_key = os.getenv('MPESA_CONSUMER_KEY', '')
+        mpesa_consumer_secret = os.getenv('MPESA_CONSUMER_SECRET', '')
+        mpesa_passkey = os.getenv('MPESA_PASSKEY', '')
+        
+        # Check if M-Pesa credentials are configured
+        if not all([mpesa_shortcode, mpesa_consumer_key, mpesa_consumer_secret, mpesa_passkey]):
+            # For demo purposes, simulate a successful STK push
+            return make_response({
+                'message': 'M-Pesa STK push initiated. Check your phone to complete payment.',
+                'simulated': True,
+                'order_id': order_id,
+                'amount': amount,
+                'phone': phone
+            }, 200)
+        
+        # Format phone number (remove leading 0 if present)
+        if phone.startswith('0'):
+            phone = '254' + phone[1:]
+        elif phone.startswith('+'):
+            phone = phone[1:]
+        
+        try:
+            # Get access token
+            import base64
+            auth = base64.b64encode(f'{mpesa_consumer_key}:{mpesa_consumer_secret}'.encode()).decode()
+            
+            token_response = requests.get(
+                'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials',
+                headers={'Authorization': f'Basic {auth}'}
+            )
+            
+            if token_response.status_code != 200:
+                return make_response({'error': 'Failed to get M-Pesa access token'}, 500)
+            
+            access_token = token_response.json().get('access_token')
+            
+            # Generate STK push request
+            import uuid
+            from datetime import datetime
+            
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            password = base64.b64encode(
+                f'{mpesa_shortcode}{mpesa_passkey}{timestamp}'.encode()
+            ).decode()
+            
+            stk_payload = {
+                'BusinessShortCode': mpesa_shortcode,
+                'Password': password,
+                'Timestamp': timestamp,
+                'TransactionType': 'CustomerBuyGoodsOnline',
+                'Amount': int(amount),
+                'PartyA': phone,
+                'PartyB': mpesa_shortcode,
+                'PhoneNumber': phone,
+                'CallBackURL': os.getenv('MPESA_CALLBACK_URL', ''),
+                'AccountReference': f'Order{order_id}',
+                'TransactionDesc': f'Payment for Order #{order_id}'
+            }
+            
+            stk_response = requests.post(
+                'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
+                json=stk_payload,
+                headers={
+                    'Authorization': f'Bearer {access_token}',
+                    'Content-Type': 'application/json'
+                }
+            )
+            
+            if stk_response.status_code == 200:
+                return make_response({
+                    'message': 'STK push sent! Check your phone to complete payment.',
+                    'checkout_request_id': stk_response.json().get('CheckoutRequestID')
+                }, 200)
+            else:
+                return make_response({
+                    'error': 'Failed to initiate STK push',
+                    'details': stk_response.text
+                }, 500)
+                
+        except Exception as e:
+            return make_response({'error': f'M-Pesa error: {str(e)}'}, 500)
+
+class MpesaCallback(Resource):
+    def post(self):
+        """Handle M-Pesa callback for STK push"""
+        data = request.get_json()
+        
+        # Process callback data
+        try:
+            result = data.get('Body', {}).get('stkCallback', {})
+            result_code = result.get('ResultCode')
+            result_desc = result.get('ResultDesc')
+            
+            if result_code == 0:
+                # Payment successful
+                callback_metadata = result.get('CallbackMetadata', {})
+                amount = 0
+                phone = ''
+                transaction_id = ''
+                
+                for item in callback_metadata.get('Item', []):
+                    if item.get('Name') == 'Amount':
+                        amount = item.get('Value')
+                    elif item.get('Name') == 'PhoneNumber':
+                        phone = item.get('Value')
+                    elif item.get('Name') == 'MpesaReceiptNumber':
+                        transaction_id = item.get('Value')
+                
+                # Find and update the order
+                # The order is identified by AccountReference in the request
+                account_ref = result.get('Item', [{}])[1].get('Value', '')
+                order_id = int(account_ref.replace('Order', ''))
+                
+                order = Order.query.get(order_id)
+                if order and not order.payment_status:
+                    order.payment_status = True
+                    
+                    payment = Payment(
+                        order_id=order_id,
+                        customer_id=order.customer_id,
+                        restaurant_id=order.restaurant_id,
+                        amount=amount,
+                        method='mpesa',
+                        transaction_id=transaction_id
+                    )
+                    db.session.add(payment)
+                    db.session.commit()
+                    
+                    return make_response({'message': 'Payment processed'}, 200)
+            else:
+                # Payment failed
+                return make_response({'error': result_desc}, 400)
+                
+        except Exception as e:
+            return make_response({'error': f'Callback processing error: {str(e)}'}, 500)
+        
+        return make_response({'message': 'Callback received'}, 200)
+
+api.add_resource(MpesaSTKPush, '/api/payments/mpesa/stkpush')
+api.add_resource(MpesaCallback, '/api/payments/mpesa/callback')
 
 # Serve uploaded files
 @app.route('/uploads/<filename>')

@@ -35,13 +35,18 @@ def seed_data():
             "Mama Ngina Drive, Mombasa"
         ]
         
-        # Restaurant logos
+        # Restaurant logos (actual food images from Unsplash)
         logos = [
-            "https://img.freepik.com/free-vector/bird-colorful-logo-gradient-vector_343694-1365.jpg?semt=ais_hybrid&w=740&q=80",
-            "https://static.free-logo-design.net/uploads/2020/06/free-falcon-logo-design.jpg",
-            "https://img.freepik.com/free-vector/abstract-logo-flame-shape_1043-44.jpg?semt=ais_hybrid&w=740&q=80",
-            "https://img.freepik.com/free-vector/bird-colorful-gradient-design-vector_343694-2506.jpg",
-            "https://media.istockphoto.com/id/1399318216/vector/round-icon-spartan-helmet.jpg?s=612x612&w=0&k=20&c=PWKk1b8Xm7THDlgYS_9qyi3ShUxL3VGtaEVJK0wgGF0="
+            "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400",
+            "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=400",
+            "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400",
+            "https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?w=400",
+            "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400",
+            "https://images.unsplash.com/photo-1550966871-3ed3c6221741?w=400",
+            "https://images.unsplash.com/photo-1551218808-94e220e084d2?w=400",
+            "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400",
+            "https://img.freepik.com/free-photo/french-restaurant-scene-paris-france-sidewalk-cafe_1101-2310.jpg?semt=ais_hybrid&w=740&q=80",
+            "https://img.freepik.com/free-photo/typical-french-restaurant-scene-tables-chairs_1147-445.jpg"
         ]
         
         # Agent images
@@ -109,7 +114,18 @@ def seed_data():
         
         # Create 20 customers
         customers = []
-        for _ in range(20):
+        # Add Dennis Karanja first
+        dennis = Customer(
+            name="Dennis Karanja",
+            contact=fake.phone_number(),
+            image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500",
+            email="dennis.karanja@customer.com"
+        )
+        dennis.password_hash = "customer"
+        customers.append(dennis)
+        db.session.add(dennis)
+        
+        for _ in range(19):
             name = fake.name()
             customer = Customer(
                 name=name,
@@ -123,7 +139,20 @@ def seed_data():
         
         # Create 15 delivery agents
         agents = []
-        for _ in range(15):
+        # Add Elizabeth Wanjiru first
+        elizabeth = DeliveryAgent(
+            name="Elizabeth Wanjiru",
+            contact=fake.phone_number(),
+            image="https://img.freepik.com/free-photo/african-woman-posing-looking-up_23-2148747978.jpg?semt=ais_hybrid&w=740&q=80",
+            rating=round(random.uniform(4.0, 5.0), 1),
+            restaurant=random.choice(restaurants),
+            email="elizabeth.wanjiru@agent.com"
+        )
+        elizabeth.password_hash = "agent"
+        agents.append(elizabeth)
+        db.session.add(elizabeth)
+        
+        for _ in range(14):
             name = fake.name()
             agent = DeliveryAgent(
                 name=name,
@@ -194,7 +223,7 @@ def seed_data():
             ("Caesar Salad", "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=500"),
             ("Chicken Wings", "https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=500"),
             ("Lamb Chops", "https://images.unsplash.com/photo-1574484284002-952d92456975?w=500"),
-            ("Seafood Platter", "https://images.unsplash.com/photo-1559737558-2f5a35f4523f?w=500"),
+            ("Seafood Platter", "https://flawlessfood.co.uk/wp-content/uploads/2022/09/Seafood-Platter-Fruits-de-Mer-271-of-381-Flawless.jpg"),
             ("Burger Deluxe", "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500"),
             ("Fried Rice", "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=500"),
             ("Noodle Soup", "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=500"),
@@ -204,7 +233,7 @@ def seed_data():
             ("Pad Thai", "https://images.unsplash.com/photo-1559314809-0d155014e29e?w=500"),
             ("Biryani", "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500"),
             ("Samosa", "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500"),
-            ("Spring Rolls", "https://images.unsplash.com/photo-1620704911511-8b2c6b146d5b?w=500"),
+            ("Spring Rolls", "https://images.unsplash.com/photo-1544025162-d76694265947?w=500"),
             ("Chocolate Cake", "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500"),
             ("Ice Cream", "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500"),
             ("Fruit Salad", "https://images.unsplash.com/photo-1564093497595-593b96d80180?w=500"),
