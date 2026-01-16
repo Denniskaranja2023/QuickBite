@@ -244,7 +244,7 @@ def seed_data():
             ("Smoothie", "https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=500"),
             ("Tea", "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=500"),
             ("Soda", "https://images.unsplash.com/photo-1581006852262-e4307cf6283a?w=500"),
-            ("Garlic Bread", "https://images.unsplash.com/photo-1573140401552-388e3c0b1abb?w=500"),
+            ("Garlic Bread", "https://urbanfarmie.com/wp-content/uploads/Sliced-Garlic-Bread-Web-22.jpg"),
             ("Onion Rings", "https://images.unsplash.com/photo-1639024471283-03518883512d?w=500"),
             ("French Fries", "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500"),
             ("Mozzarella Sticks", "https://images.unsplash.com/photo-1531749668029-2db88e4276c7?w=500"),

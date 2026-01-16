@@ -4,6 +4,7 @@ import Homepage from './pages/Homepage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import API_BASE_URL from './config';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Customer pages
 import CustomerLayout from './pages/customers/CustomerLayout';
@@ -92,41 +93,49 @@ function App() {
       <Route path="/login" element={user ? <Navigate to={`/${user.user_type}/dashboard`} /> : <Login setUser={setUser} />} />
       <Route path="/signup" element={user ? <Navigate to={`/${user.user_type}/dashboard`} /> : <Signup setUser={setUser} />} />
       
-      {/* Customer Routes */}
-      <Route path="/customer/*" element={<CustomerLayout user={user} onLogout={handleLogout} />}>
-        <Route path="dashboard" element={<CustomerDashBoard />} />
-        <Route path="restaurants/:id/menu" element={<RestaurantMenuPage />} />
-        <Route path="place-order" element={<PlaceOrderPage />} />
-        <Route path="orders" element={<CustomerOrdersPage />} />
-        <Route path="payments" element={<CustomerPaymentsPage />} />
-        <Route path="reviews" element={<CustomerReviewsPage />} />
-        <Route path="review/restaurant/:id" element={<ReviewRestaurantPage />} />
-        <Route path="review/agent/:id" element={<ReviewAgentPage />} />
-        <Route path="order/:id/payment" element={<OrderPaymentPage />} />
+      {/* Customer Routes - Protected */}
+      <Route element={<ProtectedRoute user={user} allowedUserTypes={['customer']} />}>
+        <Route path="/customer/*" element={<CustomerLayout user={user} onLogout={handleLogout} />}>
+          <Route path="dashboard" element={<CustomerDashBoard />} />
+          <Route path="restaurants/:id/menu" element={<RestaurantMenuPage />} />
+          <Route path="place-order" element={<PlaceOrderPage />} />
+          <Route path="orders" element={<CustomerOrdersPage />} />
+          <Route path="payments" element={<CustomerPaymentsPage />} />
+          <Route path="reviews" element={<CustomerReviewsPage />} />
+          <Route path="review/restaurant/:id" element={<ReviewRestaurantPage />} />
+          <Route path="review/agent/:id" element={<ReviewAgentPage />} />
+          <Route path="order/:id/payment" element={<OrderPaymentPage />} />
+        </Route>
       </Route>
 
-      {/* Restaurant Routes */}
-      <Route path="/restaurant/*" element={<ReastaurantLayout user={user} onLogout={handleLogout} />}>
-        <Route path="dashboard" element={<RestaurantDashboard />} />
-        <Route path="orders" element={<RestaurantOrdersPage />} />
-        <Route path="payments" element={<RestaurantPaymentsPage />} />
-        <Route path="agents" element={<RestaurantAgents />} />
-        <Route path="profile" element={<RestaurantProfilePage />} />
-        <Route path="reviews" element={<RestaurantReviewPage />} />
+      {/* Restaurant Routes - Protected */}
+      <Route element={<ProtectedRoute user={user} allowedUserTypes={['restaurant']} />}>
+        <Route path="/restaurant/*" element={<ReastaurantLayout user={user} onLogout={handleLogout} />}>
+          <Route path="dashboard" element={<RestaurantDashboard />} />
+          <Route path="orders" element={<RestaurantOrdersPage />} />
+          <Route path="payments" element={<RestaurantPaymentsPage />} />
+          <Route path="agents" element={<RestaurantAgents />} />
+          <Route path="profile" element={<RestaurantProfilePage />} />
+          <Route path="reviews" element={<RestaurantReviewPage />} />
+        </Route>
       </Route>
 
-      {/* Admin Routes */}
-      <Route path="/admin/*" element={<AdminLayout user={user} onLogout={handleLogout} />}>
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="restaurants" element={<AdminRestaurants />} />
-        <Route path="customers" element={<AdminCustomers />} />
-        <Route path="payments" element={<AdminPayments />} />
+      {/* Admin Routes - Protected */}
+      <Route element={<ProtectedRoute user={user} allowedUserTypes={['admin']} />}>
+        <Route path="/admin/*" element={<AdminLayout user={user} onLogout={handleLogout} />}>
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="restaurants" element={<AdminRestaurants />} />
+          <Route path="customers" element={<AdminCustomers />} />
+          <Route path="payments" element={<AdminPayments />} />
+        </Route>
       </Route>
 
-      {/* Agent Routes */}
-      <Route path="/agent/*" element={<AgentLayout user={user} onLogout={handleLogout} />}>
-        <Route path="dashboard" element={<AgentDashboard />} />
-        <Route path="reviews" element={<AgentReviewsPage />} />
+      {/* Agent Routes - Protected */}
+      <Route element={<ProtectedRoute user={user} allowedUserTypes={['agent']} />}>
+        <Route path="/agent/*" element={<AgentLayout user={user} onLogout={handleLogout} />}>
+          <Route path="dashboard" element={<AgentDashboard />} />
+          <Route path="reviews" element={<AgentReviewsPage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" />} />
