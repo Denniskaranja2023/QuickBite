@@ -49,7 +49,7 @@ migrate = Migrate(app,db)
 bcrypt.init_app(app)
 
 # Import models after db and bcrypt are initialized to avoid circular import
-from models import Restaurant, DeliveryAgent, Customer, MenuItem, Order, Payment, RestaurantReview, DeliveryReview, Admin
+from models import Restaurant, DeliveryAgent, Customer, MenuItem, Order, Payment, RestaurantReview, DeliveryReview, Admin, OrderMenuItem
 
 # Helper function to update average rating for a restaurant
 def update_restaurant_rating(restaurant_id):
@@ -481,7 +481,7 @@ class HomepageTopMenuItems(Resource):
         # Calculate order count for each menu item
         result = []
         for menu_item in menu_items_query:
-            order_count = len(menu_item.orders)
+            order_count = len(menu_item.order_menu_items)
             restaurant = menu_item.restaurant
             result.append({
                 'id': menu_item.id,
@@ -708,21 +708,17 @@ class RestaurantOrders(Resource):
         
         result = []
         for o in orders:
-            # Build menu items list with quantities by counting duplicates
-            menu_item_counts = {}
-            for item in o.menu_items:
-                if item.id in menu_item_counts:
-                    menu_item_counts[item.id]['quantity'] += 1
-                else:
-                    menu_item_counts[item.id] = {
-                        'id': item.id,
-                        'name': item.name,
-                        'unit_price': item.unit_price,
-                        'image': item.image,
-                        'quantity': 1
-                    }
-            
-            menu_items = list(menu_item_counts.values())
+            # Build menu items list with quantities from OrderMenuItem
+            menu_items = []
+            for order_item in o.order_menu_items:
+                menu_item = order_item.menu_item
+                menu_items.append({
+                    'id': menu_item.id,
+                    'name': menu_item.name,
+                    'unit_price': menu_item.unit_price,
+                    'image': menu_item.image,
+                    'quantity': order_item.quantity
+                })
             
             # Get customer details
             customer = o.customer
@@ -1134,15 +1130,16 @@ class CustomerOrders(Resource):
                     'logo': restaurant.logo
                 }
             
-            # Build menu items list (quantity defaults to 1 since it's not stored)
+            # Build menu items list with quantities from OrderMenuItem
             menu_items = []
-            for item in o.menu_items:
+            for order_item in o.order_menu_items:
+                menu_item = order_item.menu_item
                 menu_items.append({
-                    'id': item.id,
-                    'name': item.name,
-                    'unit_price': item.unit_price,
-                    'image': item.image,
-                    'quantity': 1
+                    'id': menu_item.id,
+                    'name': menu_item.name,
+                    'unit_price': menu_item.unit_price,
+                    'image': menu_item.image,
+                    'quantity': order_item.quantity
                 })
             
             result.append({
@@ -1169,11 +1166,11 @@ class CustomerOrders(Resource):
         data = request.get_json()
         restaurant_id = data.get('restaurant_id')
         delivery_address = data.get('delivery_address')
-        menu_item_ids = data.get('menu_item_ids', [])
+        menu_items_data = data.get('menu_items', [])  # Changed from menu_item_ids to menu_items with quantities
         total_price = data.get('total_price')
         
-        if not restaurant_id or not delivery_address or not menu_item_ids or total_price is None:
-            return make_response({'error': 'restaurant_id, delivery_address, menu_item_ids and total_price are required'}, 400)
+        if not restaurant_id or not delivery_address or not menu_items_data or total_price is None:
+            return make_response({'error': 'restaurant_id, delivery_address, menu_items and total_price are required'}, 400)
         
         restaurant = Restaurant.query.get(restaurant_id)
         if not restaurant:
@@ -1188,9 +1185,19 @@ class CustomerOrders(Resource):
         db.session.add(order)
         db.session.flush()
         
-        menu_items = MenuItem.query.filter(MenuItem.id.in_(menu_item_ids)).all()
-        for m in menu_items:
-            order.menu_items.append(m)
+        # Add menu items with quantities
+        for item_data in menu_items_data:
+            menu_item_id = item_data.get('id')
+            quantity = item_data.get('quantity', 1)
+            
+            menu_item = MenuItem.query.get(menu_item_id)
+            if menu_item:
+                order_menu_item = OrderMenuItem(
+                    order_id=order.id,
+                    menu_item_id=menu_item_id,
+                    quantity=quantity
+                )
+                db.session.add(order_menu_item)
         
         db.session.commit()
         
@@ -1220,15 +1227,16 @@ class CustomerOrderById(Resource):
                 'address': restaurant.address
             }
         
-        # Build menu items list
+        # Build menu items list with quantities from OrderMenuItem
         menu_items = []
-        for item in order.menu_items:
+        for order_item in order.order_menu_items:
+            menu_item = order_item.menu_item
             menu_items.append({
-                'id': item.id,
-                'name': item.name,
-                'unit_price': item.unit_price,
-                'image': item.image,
-                'quantity': 1
+                'id': menu_item.id,
+                'name': menu_item.name,
+                'unit_price': menu_item.unit_price,
+                'image': menu_item.image,
+                'quantity': order_item.quantity
             })
         
         return make_response({
@@ -1260,9 +1268,24 @@ class CustomerOrderById(Resource):
             order.delivery_address = data['delivery_address']
         if 'total_price' in data:
             order.total_price = data['total_price']
-        if 'menu_item_ids' in data:
-            new_ids = data.get('menu_item_ids') or []
-            order.menu_items = MenuItem.query.filter(MenuItem.id.in_(new_ids)).all()
+        if 'menu_items' in data:
+            # Clear existing menu items
+            OrderMenuItem.query.filter_by(order_id=order.id).delete()
+            
+            # Add new menu items with quantities
+            menu_items_data = data.get('menu_items', [])
+            for item_data in menu_items_data:
+                menu_item_id = item_data.get('id')
+                quantity = item_data.get('quantity', 1)
+                
+                menu_item = MenuItem.query.get(menu_item_id)
+                if menu_item:
+                    order_menu_item = OrderMenuItem(
+                        order_id=order.id,
+                        menu_item_id=menu_item_id,
+                        quantity=quantity
+                    )
+                    db.session.add(order_menu_item)
         
         db.session.commit()
         return make_response({'message': 'Order updated'}, 200)
@@ -1758,14 +1781,16 @@ class DeliveryAgentPendingOrders(Resource):
                     'logo': restaurant.logo
                 }
             
-            # Build menu items list
+            # Build menu items list with quantities from OrderMenuItem
             menu_items = []
-            for item in o.menu_items:
+            for order_item in o.order_menu_items:
+                menu_item = order_item.menu_item
                 menu_items.append({
-                    'id': item.id,
-                    'name': item.name,
-                    'unit_price': item.unit_price,
-                    'image': item.image
+                    'id': menu_item.id,
+                    'name': menu_item.name,
+                    'unit_price': menu_item.unit_price,
+                    'image': menu_item.image,
+                    'quantity': order_item.quantity
                 })
             
             result.append({
@@ -1811,14 +1836,16 @@ class DeliveryAgentDeliveredOrders(Resource):
                     'contact': customer.contact
                 }
             
-            # Build menu items list
+            # Build menu items list with quantities from OrderMenuItem
             menu_items = []
-            for item in o.menu_items:
+            for order_item in o.order_menu_items:
+                menu_item = order_item.menu_item
                 menu_items.append({
-                    'id': item.id,
-                    'name': item.name,
-                    'unit_price': item.unit_price,
-                    'image': item.image
+                    'id': menu_item.id,
+                    'name': menu_item.name,
+                    'unit_price': menu_item.unit_price,
+                    'image': menu_item.image,
+                    'quantity': order_item.quantity
                 })
             
             result.append({

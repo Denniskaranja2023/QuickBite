@@ -4,11 +4,24 @@ import pytz
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.associationproxy import association_proxy
 
-# Association table for many-to-many relationship between orders and menu items
-order_menuitem_association = db.Table('order_menuitem_association',
-    db.Column('order_id', db.Integer, db.ForeignKey('orders.id'), primary_key=True),
-    db.Column('menu_item_id', db.Integer, db.ForeignKey('menu_items.id'), primary_key=True)
-)
+# Association object for orders and menu items with quantity
+class OrderMenuItem(db.Model):
+    __tablename__ = 'order_menu_items'
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
+    menu_item_id = db.Column(db.Integer, db.ForeignKey('menu_items.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+    
+    order = db.relationship('Order', back_populates='order_menu_items')
+    menu_item = db.relationship('MenuItem', back_populates='order_menu_items')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'order_id': self.order_id,
+            'menu_item_id': self.menu_item_id,
+            'quantity': self.quantity
+        }
 
 class Admin(db.Model):
     __tablename__ = 'admins'
@@ -197,7 +210,7 @@ class MenuItem(db.Model):
     availability= db.Column(db.Boolean, default=True)
     
     restaurant = db.relationship('Restaurant', back_populates='menu_items')
-    orders = db.relationship('Order', secondary=order_menuitem_association, back_populates='menu_items')
+    order_menu_items = db.relationship('OrderMenuItem', back_populates='menu_item')
 
     def to_dict(self):
         return {
@@ -227,7 +240,7 @@ class Order(db.Model):
     
     restaurant = db.relationship('Restaurant', back_populates='orders')
     delivery_agent = db.relationship('DeliveryAgent', back_populates='orders')
-    menu_items = db.relationship('MenuItem', secondary=order_menuitem_association, back_populates='orders')
+    order_menu_items = db.relationship('OrderMenuItem', back_populates='order')
     customer = db.relationship('Customer', back_populates='orders')
     payment = db.relationship('Payment', back_populates='order', uselist=False)
     

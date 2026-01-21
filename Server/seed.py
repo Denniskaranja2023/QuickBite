@@ -1,5 +1,5 @@
 from app import app, db
-from models import Restaurant, DeliveryAgent, Customer, MenuItem, Order, Payment, RestaurantReview, DeliveryReview, Admin
+from models import Restaurant, DeliveryAgent, Customer, MenuItem, Order, Payment, RestaurantReview, DeliveryReview, Admin, OrderMenuItem
 from faker import Faker
 import random
 
@@ -289,12 +289,23 @@ def seed_data():
         
         db.session.commit()
         
-        # Add menu items to orders and calculate total price
+        # Add menu items to orders with quantities and calculate total price
         for order in orders:
             num_items = random.randint(1, 5)
             selected_items = random.sample(menu_items, num_items)
-            order.menu_items.extend(selected_items)
-            order.total_price = round(sum(item.unit_price for item in selected_items), 2)
+            total_price = 0
+            
+            for item in selected_items:
+                quantity = random.randint(1, 3)  # Random quantity between 1-3
+                order_menu_item = OrderMenuItem(
+                    order=order,
+                    menu_item=item,
+                    quantity=quantity
+                )
+                db.session.add(order_menu_item)
+                total_price += item.unit_price * quantity
+            
+            order.total_price = round(total_price, 2)
         
         # Create 15 payments for some orders
         paid_orders = random.sample(orders, 15)
