@@ -37,7 +37,10 @@ function PlaceOrderPage() {
         credentials: 'include',
         body: JSON.stringify({
           restaurant_id: restaurant?.id,
-          menu_item_ids: cartItems.map(item => item.menu_item_id || item.id),
+          menu_items: cartItems.map(item => ({
+            id: item.menu_item_id || item.id,
+            quantity: item.quantity
+          })),
           delivery_address: formData.delivery_address,
           total_price: calculateTotal(),
         }),
