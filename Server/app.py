@@ -1182,32 +1182,36 @@ class CustomerOrders(Resource):
         if not restaurant:
             return make_response({'error': 'Restaurant not found'}, 404)
         
-        order = Order(
-            restaurant_id=restaurant_id,
-            customer_id=customer_id,
-            delivery_address=delivery_address,
-            total_price=total_price
-        )
-        db.session.add(order)
-        db.session.flush()
-        
-        # Add menu items with quantities
-        for item_data in menu_items_data:
-            menu_item_id = item_data.get('id')
-            quantity = item_data.get('quantity', 1)
+        try:
+            order = Order(
+                restaurant_id=restaurant_id,
+                customer_id=customer_id,
+                delivery_address=delivery_address,
+                total_price=total_price
+            )
+            db.session.add(order)
+            db.session.flush()
             
-            menu_item = MenuItem.query.get(menu_item_id)
-            if menu_item:
-                order_menu_item = OrderMenuItem(
-                    order_id=order.id,
-                    menu_item_id=menu_item_id,
-                    quantity=quantity
-                )
-                db.session.add(order_menu_item)
-        
-        db.session.commit()
-        
-        return make_response({'message': 'Order created', 'id': order.id}, 201)
+            # Add menu items with quantities
+            for item_data in menu_items_data:
+                menu_item_id = item_data.get('id')
+                quantity = item_data.get('quantity', 1)
+                
+                menu_item = MenuItem.query.get(menu_item_id)
+                if menu_item:
+                    order_menu_item = OrderMenuItem(
+                        order_id=order.id,
+                        menu_item_id=menu_item_id,
+                        quantity=quantity
+                    )
+                    db.session.add(order_menu_item)
+            
+            db.session.commit()
+            
+            return make_response({'message': 'Order created', 'id': order.id}, 201)
+        except Exception as e:
+            db.session.rollback()
+            return make_response({'error': f'Failed to create order: {str(e)}'}, 500)
 
 
 class CustomerOrderById(Resource):

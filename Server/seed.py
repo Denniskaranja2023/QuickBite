@@ -115,27 +115,34 @@ def seed_data():
         # Create 20 customers
         customers = []
         # Add Dennis Karanja first
-        dennis = Customer(
-            name="Dennis Karanja",
-            contact=fake.phone_number(),
-            image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500",
-            email="dennis.karanja@customer.com"
-        )
-        dennis.password_hash = "customer"
-        customers.append(dennis)
-        db.session.add(dennis)
-        
-        for _ in range(19):
-            name = fake.name()
-            customer = Customer(
-                name=name,
+        dennis = Customer.query.filter_by(email="dennis.karanja@customer.com").first()
+        if not dennis:
+            dennis = Customer(
+                name="Dennis Karanja",
                 contact=fake.phone_number(),
-                image=random.choice(customer_images),
-                email=f"{name.lower().replace(' ', '.')}@customer.com"
+                image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500",
+                email="dennis.karanja@customer.com"
             )
-            customer.password_hash = "customer"
-            customers.append(customer)
-            db.session.add(customer)
+            dennis.password_hash = "customer"
+            db.session.add(dennis)
+        customers.append(dennis)
+        
+        for i in range(19):
+            name = fake.name()
+            email = f"{name.lower().replace(' ', '.')}@customer.com"
+            existing = Customer.query.filter_by(email=email).first()
+            if not existing:
+                customer = Customer(
+                    name=name,
+                    contact=fake.phone_number(),
+                    image=random.choice(customer_images),
+                    email=email
+                )
+                customer.password_hash = "customer"
+                customers.append(customer)
+                db.session.add(customer)
+            else:
+                customers.append(existing)
         
         # Create 15 delivery agents
         agents = []
