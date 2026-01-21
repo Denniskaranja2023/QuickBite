@@ -85,33 +85,13 @@ function Signup({ setUser }) {
               </div>
             )}
 
-            {/* User Type Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                I am a
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {['customer', 'restaurant'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, user_type: type })}
-                    className={`py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
-                      formData.user_type === type
-                        ? 'bg-primary-500 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* User Type Selection - Hidden, defaults to customer */}
+            <input type="hidden" name="user_type" value="customer" />
 
             {/* Name */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                {formData.user_type === 'restaurant' ? 'Restaurant Name' : 'Full Name'}
+                Full Name
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -123,7 +103,7 @@ function Signup({ setUser }) {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="input-field pl-10"
-                  placeholder={formData.user_type === 'restaurant' ? 'Restaurant Name' : 'John Doe'}
+                  placeholder="John Doe"
                 />
               </div>
             </div>
