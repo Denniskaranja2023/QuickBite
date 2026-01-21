@@ -2094,7 +2094,7 @@ class MpesaCallback(Resource):
             else:
                 # Payment failed
                 return make_response({'error': result_desc}, 400)
-                
+                                               
         except Exception as e:
             return make_response({'error': f'Callback processing error: {str(e)}'}, 500)
         
