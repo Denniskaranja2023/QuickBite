@@ -708,18 +708,21 @@ class RestaurantOrders(Resource):
         
         result = []
         for o in orders:
-            # Build menu items list with quantities
-            # Since quantity is not stored in the association table, we'll track it
-            # For now, we'll just list the items (quantity defaults to 1)
-            menu_items = []
+            # Build menu items list with quantities by counting duplicates
+            menu_item_counts = {}
             for item in o.menu_items:
-                menu_items.append({
-                    'id': item.id,
-                    'name': item.name,
-                    'unit_price': item.unit_price,
-                    'image': item.image,
-                    'quantity': 1  # Default to 1, can be enhanced with association table modification
-                })
+                if item.id in menu_item_counts:
+                    menu_item_counts[item.id]['quantity'] += 1
+                else:
+                    menu_item_counts[item.id] = {
+                        'id': item.id,
+                        'name': item.name,
+                        'unit_price': item.unit_price,
+                        'image': item.image,
+                        'quantity': 1
+                    }
+            
+            menu_items = list(menu_item_counts.values())
             
             # Get customer details
             customer = o.customer
