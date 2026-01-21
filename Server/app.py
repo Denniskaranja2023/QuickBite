@@ -1166,8 +1166,14 @@ class CustomerOrders(Resource):
         data = request.get_json()
         restaurant_id = data.get('restaurant_id')
         delivery_address = data.get('delivery_address')
-        menu_items_data = data.get('menu_items', [])  # Changed from menu_item_ids to menu_items with quantities
+        menu_items_data = data.get('menu_items', [])
+        menu_item_ids = data.get('menu_item_ids', [])  # Backward compatibility
         total_price = data.get('total_price')
+        
+        # Handle both old and new formats
+        if not menu_items_data and menu_item_ids:
+            # Convert old format to new format
+            menu_items_data = [{'id': item_id, 'quantity': 1} for item_id in menu_item_ids]
         
         if not restaurant_id or not delivery_address or not menu_items_data or total_price is None:
             return make_response({'error': 'restaurant_id, delivery_address, menu_items and total_price are required'}, 400)
