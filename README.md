@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![QuickBite Logo](./Frontend/public/Screenshot from 2026-01-16 13-28-42.png)
-
 *A modern, full-stack food delivery platform connecting customers, restaurants, and delivery agents*
 
 [![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
